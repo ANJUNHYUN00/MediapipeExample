@@ -1,0 +1,17 @@
+{
+  "type": "hand_gesture",
+  "version": 1,
+  "timestamp": 1750000000200,
+  "sequence": 43,
+  "handDetected": true,
+  "handedness": "Left",
+  "gesture": "PAPER",
+  "confidence": 0.97,
+  "fingerStates": {
+    "thumb": true,
+    "index": true,
+    "middle": true,
+    "ring": true,
+    "pinky": true
+  }
+}

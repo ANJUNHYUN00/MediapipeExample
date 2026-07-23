@@ -1,0 +1,17 @@
+{
+  "type": "hand_gesture",
+  "version": 1,
+  "timestamp": 1750000000300,
+  "sequence": 44,
+  "handDetected": true,
+  "handedness": "Right",
+  "gesture": "UNKNOWN",
+  "confidence": 0.55,
+  "fingerStates": {
+    "thumb": false,
+    "index": true,
+    "middle": false,
+    "ring": true,
+    "pinky": false
+  }
+}

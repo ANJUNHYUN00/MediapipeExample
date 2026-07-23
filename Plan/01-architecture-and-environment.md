@@ -120,14 +120,14 @@ MediapipeUnity/
 
 ### 개발 환경
 
-- Python 3.11을 기준으로 가상 환경을 사용한다.
-- Python 핵심 의존성은 OpenCV, MediaPipe, `websockets`, `pytest`다.
-- 의존성 버전은 첫 동작 확인 후 재현 가능하게 고정한다.
-- Unity는 팀에서 확정한 단일 LTS 에디터 버전을 사용하고 버전을 문서화한다.
+- Python 3.11.9 가상 환경을 사용한다.
+- 검증된 핵심 의존성은 OpenCV contrib 5.0.0.93, MediaPipe 0.10.35, `websockets` 16.1.1, `pytest` 8.4.2다.
+- 핵심 의존성 버전은 `Mediapipe/pyproject.toml`에 고정한다.
+- Unity Editor 6000.3.10f1을 프로젝트 버전으로 사용한다.
 - Unity용 WebSocket 라이브러리는 데스크톱 빌드, 비동기 수신, 종료 취소, 오류 콜백을 지원해야 한다.
 - Python과 Unity 모두 UTF-8 JSON을 사용한다.
 
-구체적인 Unity LTS 버전과 WebSocket 패키지는 실제 개발 PC 호환성을 확인한 뒤 확정한다. 확정 시 이 문서와 실행 문서를 함께 갱신한다.
+Unity용 WebSocket 패키지는 후속 수신기 구현 전 실제 데스크톱 호환성을 확인한 뒤 확정한다.
 
 ### 설정 관리
 

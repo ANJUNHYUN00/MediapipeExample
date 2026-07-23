@@ -81,6 +81,9 @@ HandTrackingResult:
 
 ### MediaPipe 설정
 
+- MediaPipe Tasks `HandLandmarker` 0.10.35와 공식 full float16 모델 번들을 사용한다.
+- 모델 기본 경로는 `Mediapipe/models/hand_landmarker.task`다.
+- 연속 프레임은 `VIDEO` 모드와 단조 증가 밀리초 타임스탬프로 처리한다.
 - 최대 손 수는 초기 버전에서 `1`이다.
 - 정적 이미지 모드보다 연속 영상 추적에 적합한 설정을 사용한다.
 - 검출, 존재, 추적 신뢰도 임계값은 설정으로 분리한다.

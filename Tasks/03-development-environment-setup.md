@@ -1,5 +1,7 @@
 # Task 03. 개발 환경 구성
 
+> 상태: 완료 (2026-07-23)
+
 ## 작업 목적
 
 Python 손 추적 코드를 실행·테스트할 수 있는 재현 가능한 Python 3.11 환경을 구성하고, Unity LTS 프로젝트를 올바른 Editor로 열 수 있는 상태로 만든다. 의존성 버전과 실제 환경 정보를 기록해 다른 AI 또는 개발자가 같은 명령으로 환경을 재구성할 수 있게 한다.
@@ -150,3 +152,21 @@ Python 손 추적 코드를 실행·테스트할 수 있는 재현 가능한 Pyt
 ## 다음 Task와의 연결
 
 검증된 OpenCV와 Python 실행 환경을 사용해 [`04-webcam-loop-and-preview.md`](./04-webcam-loop-and-preview.md)에서 카메라 입력 루프와 미리보기 창을 구현한다. Task 04는 MediaPipe를 호출하지 않고 프레임 캡처, 설정, 오류 처리와 정상 종료만 먼저 검증한다.
+
+## 수행 결과
+
+- Windows 11 x64와 Git 2.54.0 환경을 확인했다.
+- Python 인터프리터가 없어 `winget`으로 Python 3.11.9를 설치했다. 기존 Python Launcher가 새 인터프리터를 열거하지 못해 `%LOCALAPPDATA%\Programs\Python\Python311\python.exe`를 사용했다.
+- `Mediapipe/.venv`를 만들고 pip 26.1.2로 갱신했다.
+- `pyproject.toml`에 MediaPipe 0.10.35, OpenCV contrib 5.0.0.93, websockets 16.1.1, pytest 8.4.2를 고정하고 editable 설치했다.
+- OpenCV, MediaPipe, websockets import와 `vision.HandLandmarker` API 존재를 확인했다.
+- 공식 HandLandmarker full float16 모델을 `Mediapipe/models/hand_landmarker.task`에 설치했다. 크기는 7,819,105 bytes, SHA-256은 `FBC2A30080C3C557093B5DDFC334698132EB341044CCEE322CCF8BCF3607CDE1`이다.
+- 모델을 이용한 `HandLandmarker` VIDEO 모드 생성과 정상 종료에 성공했다.
+- `python -m pytest` 결과는 2개 테스트 통과, `pip check` 결과는 의존성 충돌 없음이다.
+- 관리형 샌드박스의 `.pytest_cache` 파일 잠금으로 테스트 종료가 지연돼 pytest cache provider를 프로젝트 설정에서 비활성화했다. 이후 표준 `python -m pytest`가 종료 코드 0으로 정상 완료됐다.
+- 제한된 네트워크에서 모델 종료 시 원격 로그 업로더 연결 실패 메시지가 출력되지만, 모델 초기화와 종료 검증은 성공했다.
+- Unity Hub 3.16.3과 Editor 6000.3.10f1을 확인하고 `MediapipeUnity/`에 정식 Unity 프로젝트를 생성했다.
+- Unity batch mode 초기 import와 컴파일이 종료 코드 0으로 끝났고 C# 컴파일 오류가 없음을 로그에서 확인했다.
+- `ProjectSettings/ProjectVersion.txt`가 `6000.3.10f1 (e35f0c77bd8e)`로 기록됐으며 README와 일치한다.
+- TextMeshPro 리소스와 WebSocket 패키지는 실제 UI·수신기 구현 Task에서 검증하기 위해 아직 추가하지 않았다.
+- `.venv`, Unity `Library`, `Temp`, `Logs`, `UserSettings`, `obj`는 루트 `.gitignore` 규칙으로 제외된다.

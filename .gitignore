@@ -25,6 +25,7 @@ dist/
 # Unity generated project and IDE files
 *.csproj
 *.sln
+*.slnx
 *.suo
 *.user
 *.userprefs

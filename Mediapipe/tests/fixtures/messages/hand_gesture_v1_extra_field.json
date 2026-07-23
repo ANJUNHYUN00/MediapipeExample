@@ -1,0 +1,18 @@
+{
+  "type": "hand_gesture",
+  "version": 1,
+  "timestamp": 1750000000500,
+  "sequence": 46,
+  "handDetected": true,
+  "handedness": "Right",
+  "gesture": "ROCK",
+  "confidence": 0.91,
+  "fingerStates": {
+    "thumb": true,
+    "index": false,
+    "middle": false,
+    "ring": false,
+    "pinky": false
+  },
+  "source": "contract-test"
+}

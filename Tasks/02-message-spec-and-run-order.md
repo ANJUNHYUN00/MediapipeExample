@@ -1,5 +1,7 @@
 # Task 02. 메시지 규격 및 실행 순서 확정
 
+> 상태: 완료 (2026-07-23)
+
 ## 작업 목적
 
 Python 게시자와 Unity 수신자가 독립적으로 구현되어도 같은 데이터를 해석하도록 `hand_gesture` 버전 1 JSON 계약을 실행 가능한 규격과 fixture로 고정한다. 개발·운영 시 Python과 Unity의 시작, 재연결, 종료 순서를 문서화해 다음 Task에서 환경과 기능을 일관되게 검증할 수 있게 한다.
@@ -159,3 +161,14 @@ Python 게시자와 Unity 수신자가 독립적으로 구현되어도 같은 �
 ## 다음 Task와의 연결
 
 고정된 프로젝트 구조와 메시지 계약을 바탕으로 [`03-development-environment-setup.md`](./03-development-environment-setup.md)에서 Python 3.11 가상 환경과 의존성을 설치하고, Unity LTS 프로젝트의 실제 생성 여부와 패키지 호환성을 검증한다. Task 03에서 선택한 정확한 버전은 README와 잠금 가능한 설정에 기록한다.
+
+## 수행 결과
+
+- Python 서버, Unity 클라이언트, `ws://127.0.0.1:8765`, UTF-8 JSON 텍스트, `hand_gesture` 버전 1을 변경 없이 계약 기준으로 확정했다.
+- `Mediapipe/README.md`에 필드 규격, 상태별 불변 조건, Python snake_case와 JSON camelCase 매핑, 송신 전 검증 규칙을 추가했다.
+- `MediapipeUnity/README.md`에 C# DTO 형식, 상태별 한글 표시, 메시지 거부·추가 필드 허용 규칙을 추가했다.
+- `ROCK`, `SCISSORS`, `PAPER`, `UNKNOWN`, `NO_HAND` 정상 fixture와 추가 필드, 잘못된 버전, 잘못된 제스처 fixture를 생성했다.
+- Python 우선 실행, Unity 선실행, 정상 종료, Task 04~06 Python 단독 실행 순서를 양쪽 README에 기록했다.
+- PowerShell `ConvertFrom-Json`으로 8개 fixture의 JSON 문법을 검증했다. 정상·추가 필드 fixture 6개는 버전 1 의미 검증을 통과했고, 오류 fixture 2개는 의도대로 각각 지원하지 않는 버전과 제스처 때문에 거부됐다.
+- Python README, Unity README와 Task 문서에서 URI, 메시지 종류, 다섯 상태값, `handDetected`, `fingerStates` 표기가 일치함을 확인했다.
+- WebSocket 서버·Unity 수신기·제스처 판정 기능 코드는 구현하지 않았다.
