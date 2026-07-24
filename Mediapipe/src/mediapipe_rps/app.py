@@ -11,8 +11,9 @@ from typing import Sequence
 import cv2
 
 from .camera import Camera, CameraError
-from .config import CameraConfig, DebugConfig, PoseConfig
-from .pose_debug import format_pose_result, render_pose_debug
+from .config import CameraConfig, DebugConfig, PointingConfig, PoseConfig
+from .pointing import PointingPipeline
+from .pose_debug import format_pointer_state, render_pose_debug
 from .pose_tracker import PoseTracker, PoseTrackerError
 
 LOGGER = logging.getLogger(__name__)
@@ -30,6 +31,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--height", type=int)
     parser.add_argument("--model", type=Path)
     parser.add_argument("--visibility-threshold", type=float, default=0.5)
+    parser.add_argument("--min-elbow-angle", type=float, default=150.0)
+    parser.add_argument("--pointer-extension", type=float, default=0.25)
+    parser.add_argument("--smoothing-alpha", type=float, default=0.35)
+    parser.add_argument("--activation-frames", type=int, default=2)
     parser.add_argument("--log-interval", type=float, default=1.0)
     parser.add_argument(
         "--max-frames",
@@ -66,6 +71,7 @@ def _update_fps(previous_fps: float, elapsed_seconds: float) -> float:
 def run(
     camera_config: CameraConfig,
     pose_config: PoseConfig,
+    pointing_config: PointingConfig,
     debug_config: DebugConfig,
 ) -> int:
     fps = 0.0
@@ -74,6 +80,8 @@ def run(
     previous_state = None
     processed_frames = 0
     state_counts = {"TRACKING": 0, "PARTIAL": 0, "LOST": 0}
+    pointing_frames = 0
+    pointing_pipeline = PointingPipeline(pointing_config)
 
     try:
         with Camera(camera_config) as camera, PoseTracker(pose_config) as tracker:
@@ -81,16 +89,28 @@ def run(
             while True:
                 frame = camera.read()
                 result = tracker.process(frame)
+                frame_height, frame_width = frame.image_bgr.shape[:2]
+                pointer_state = pointing_pipeline.update(
+                    result,
+                    image_aspect_ratio=frame_width / frame_height,
+                )
                 processed_frames += 1
                 state_counts[result.tracking.value] += 1
+                if pointer_state.pointing:
+                    pointing_frames += 1
 
                 now = time.monotonic()
                 fps = _update_fps(fps, now - previous_frame_time)
                 previous_frame_time = now
 
-                if result.tracking is not previous_state or now >= next_console_log_time:
-                    LOGGER.info("%s", format_pose_result(result))
-                    previous_state = result.tracking
+                current_state = (
+                    pointer_state.tracking,
+                    pointer_state.pointing,
+                    pointer_state.reason,
+                )
+                if current_state != previous_state or now >= next_console_log_time:
+                    LOGGER.info("%s", format_pointer_state(pointer_state))
+                    previous_state = current_state
                     next_console_log_time = (
                         now + debug_config.console_log_interval_seconds
                     )
@@ -98,9 +118,10 @@ def run(
                 if camera_config.preview_enabled:
                     preview = render_pose_debug(
                         frame.image_bgr,
-                        result,
+                        pointer_state.pose,
                         mirror_preview=camera_config.mirror_preview,
                         fps=fps,
+                        pointer_state=pointer_state,
                     )
                     cv2.imshow(camera_config.window_name, preview)
                     if cv2.waitKey(1) & 0xFF in (ord("q"), 27):
@@ -120,11 +141,12 @@ def run(
             cv2.destroyAllWindows()
 
     LOGGER.info(
-        "Processed %d frames: TRACKING=%d PARTIAL=%d LOST=%d",
+        "Processed %d frames: TRACKING=%d PARTIAL=%d LOST=%d POINTING=%d",
         processed_frames,
         state_counts["TRACKING"],
         state_counts["PARTIAL"],
         state_counts["LOST"],
+        pointing_frames,
     )
     return 0
 
@@ -149,6 +171,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             model_path=args.model or default_pose_config.model_path,
             min_right_arm_visibility=args.visibility_threshold,
         )
+        pointing_config = PointingConfig(
+            min_joint_visibility=args.visibility_threshold,
+            min_elbow_angle_degrees=args.min_elbow_angle,
+            pointer_extension_factor=args.pointer_extension,
+            smoothing_alpha=args.smoothing_alpha,
+            activation_frames=args.activation_frames,
+        )
         debug_config = DebugConfig(
             console_log_interval_seconds=args.log_interval,
             max_frames=args.max_frames,
@@ -157,7 +186,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         LOGGER.error("Invalid configuration: %s", exc)
         return 2
 
-    return run(camera_config, pose_config, debug_config)
+    return run(camera_config, pose_config, pointing_config, debug_config)
 
 
 if __name__ == "__main__":

@@ -25,10 +25,10 @@ MVP 입력은 다음 세 Pose Landmarker 관절로 제한한다.
 | [`Plan/07-triage-trace-architecture-and-pose-input.md`](./Plan/07-triage-trace-architecture-and-pose-input.md) | Pose 기반 아키텍처와 오른팔 입력 설계 | Pose 구현 전에 |
 | [`Plan/08-pose-v2-protocol-and-unity-ar.md`](./Plan/08-pose-v2-protocol-and-unity-ar.md) | pose v2 게시·수신·Unity AR 표시 설계 | 통신·Unity 구현 전에 |
 | [`Tasks/07-pose-landmarker-runtime.md`](./Tasks/07-pose-landmarker-runtime.md) | 완료: Pose Landmarker 실행과 오른팔 관절 추출 | Pose 런타임 변경 전 |
-| [`Tasks/08-right-arm-pointing-and-quality.md`](./Tasks/08-right-arm-pointing-and-quality.md) | 다음 활성 Task: 오른팔 관절 품질과 포인터 계산 | 다음 구현 작업 |
-| [`Tasks/09-pose-v2-publisher-and-unity-receiver.md`](./Tasks/09-pose-v2-publisher-and-unity-receiver.md) | pose v2 송수신과 Unity 연결 | Task 08 이후 |
+| [`Tasks/08-right-arm-pointing-and-quality.md`](./Tasks/08-right-arm-pointing-and-quality.md) | 완료: 오른팔 관절 품질과 안정화된 포인터 계산 | pointing 변경 전 |
+| [`Tasks/09-pose-v2-publisher-and-unity-receiver.md`](./Tasks/09-pose-v2-publisher-and-unity-receiver.md) | 다음 활성 Task: pose v2 송수신과 Unity 연결 | 다음 구현 작업 |
 
-기존 `Plan/01`~`06`, `Tasks/01`~`06`, `hand_gesture` fixture와 Hand Landmarker 자산은 삭제하지 않는다. 완료된 Task 01~03과 Task 07은 재사용 기반이며, 미완료 Hand/RPS Task 04~06은 레거시 참조로 보존한다. 다음 활성 구현은 Task 08부터 시작한다.
+기존 `Plan/01`~`06`, `Tasks/01`~`06`, `hand_gesture` fixture와 Hand Landmarker 자산은 삭제하지 않는다. 완료된 Task 01~03과 Task 07~08은 재사용 기반이며, 미완료 Hand/RPS Task 04~06은 레거시 참조로 보존한다. 다음 활성 구현은 Task 09부터 시작한다.
 
 ## 3. 핵심 아키텍처
 

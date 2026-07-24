@@ -60,6 +60,50 @@ class PoseConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class PointingConfig:
+    """Right-arm geometry and temporal stability settings."""
+
+    min_joint_visibility: float = 0.5
+    min_upper_arm_length: float = 0.05
+    min_forearm_length: float = 0.05
+    min_shoulder_wrist_length: float = 0.10
+    min_segment_length_ratio: float = 0.25
+    max_segment_length_ratio: float = 4.0
+    min_elbow_angle_degrees: float = 150.0
+    pointer_extension_factor: float = 0.25
+    smoothing_alpha: float = 0.35
+    smoothing_max_frame_gap: int = 2
+    activation_frames: int = 2
+
+    def __post_init__(self) -> None:
+        if not 0.0 <= self.min_joint_visibility <= 1.0:
+            raise ValueError("min_joint_visibility must be between 0.0 and 1.0")
+        for name in (
+            "min_upper_arm_length",
+            "min_forearm_length",
+            "min_shoulder_wrist_length",
+        ):
+            if getattr(self, name) <= 0.0:
+                raise ValueError(f"{name} must be greater than zero")
+        if self.min_segment_length_ratio <= 0.0:
+            raise ValueError("min_segment_length_ratio must be greater than zero")
+        if self.max_segment_length_ratio < self.min_segment_length_ratio:
+            raise ValueError(
+                "max_segment_length_ratio must not be less than the minimum"
+            )
+        if not 0.0 <= self.min_elbow_angle_degrees <= 180.0:
+            raise ValueError("min_elbow_angle_degrees must be between 0 and 180")
+        if self.pointer_extension_factor < 0.0:
+            raise ValueError("pointer_extension_factor must be zero or greater")
+        if not 0.0 < self.smoothing_alpha <= 1.0:
+            raise ValueError("smoothing_alpha must be greater than 0 and at most 1")
+        if self.smoothing_max_frame_gap <= 0:
+            raise ValueError("smoothing_max_frame_gap must be greater than zero")
+        if self.activation_frames <= 0:
+            raise ValueError("activation_frames must be greater than zero")
+
+
+@dataclass(frozen=True, slots=True)
 class DebugConfig:
     """Human-readable diagnostics settings."""
 

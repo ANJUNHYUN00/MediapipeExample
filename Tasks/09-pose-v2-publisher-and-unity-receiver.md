@@ -1,6 +1,6 @@
 # Task 09. Pose v2 게시자 및 Unity 수신 기반
 
-> 상태: 대기
+> 상태: 대기 — Triage Trace의 다음 활성 구현 Task
 
 ## 작업 목적
 

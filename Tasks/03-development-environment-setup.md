@@ -2,7 +2,7 @@
 
 > 상태: 완료 (2026-07-23)
 
-> Triage Trace 전환 안내 (2026-07-24): 이 Task의 Python·Unity 환경 결과는 그대로 재사용한다. 기존 RPS 기준의 Task 04 연결은 이력이다. Pose 런타임 Task 07은 완료됐으며 현재 다음 활성 구현은 [`08-right-arm-pointing-and-quality.md`](./08-right-arm-pointing-and-quality.md)다.
+> Triage Trace 전환 안내 (2026-07-24): 이 Task의 Python·Unity 환경 결과는 그대로 재사용한다. 기존 RPS 기준의 Task 04 연결은 이력이다. Pose 런타임 Task 07과 포인팅 Task 08은 완료됐으며 현재 다음 활성 구현은 [`09-pose-v2-publisher-and-unity-receiver.md`](./09-pose-v2-publisher-and-unity-receiver.md)다.
 
 ## 작업 목적
 

@@ -2,8 +2,20 @@ from __future__ import annotations
 
 import numpy as np
 
-from mediapipe_rps.pose_debug import format_pose_result, render_pose_debug
-from mediapipe_rps.pose_models import Joint, PoseTrackingResult, TrackingState
+from mediapipe_rps.pose_debug import (
+    format_pointer_state,
+    format_pose_result,
+    render_pose_debug,
+)
+from mediapipe_rps.pose_models import (
+    Joint,
+    NormalizedPointer,
+    PointingReason,
+    PosePointerState,
+    PoseTrackingResult,
+    TrackingState,
+    Vector2,
+)
 
 
 def tracking_result() -> PoseTrackingResult:
@@ -40,4 +52,31 @@ def test_preview_render_does_not_modify_source_frame() -> None:
 
     assert rendered.shape == source.shape
     assert np.array_equal(source, before)
+    assert np.any(rendered != source)
+
+
+def test_pointer_diagnostics_include_decision_and_render_marker() -> None:
+    pose = tracking_result()
+    state = PosePointerState(
+        pose=pose,
+        pointing=True,
+        pointer=NormalizedPointer(0.8, 0.4),
+        arm_direction=Vector2(1.0, 0.0),
+        elbow_angle_degrees=175.0,
+        reason=PointingReason.POINTING,
+    )
+    source = np.zeros((240, 320, 3), dtype=np.uint8)
+
+    text = format_pointer_state(state)
+    rendered = render_pose_debug(
+        source,
+        pose,
+        mirror_preview=False,
+        fps=30.0,
+        pointer_state=state,
+    )
+
+    assert "pointing=true" in text
+    assert "reason=POINTING" in text
+    assert "angle=175.0" in text
     assert np.any(rendered != source)

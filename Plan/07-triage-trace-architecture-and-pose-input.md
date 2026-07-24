@@ -48,7 +48,8 @@ pointing.py           # tracking 품질과 포인터 계산
 - 모델 경로, 검출·존재·추적 임계값은 설정에서 관리한다.
 - 모델 객체는 앱 수명 동안 한 번 생성하고 정상 종료한다.
 - 공식 모델 자산의 출처, 라이선스, 파일 크기와 SHA-256을 설치 시 기록한다.
-- 현재 저장소에는 Pose 모델이 아직 없으므로 Task 07이 실제 호환성을 검증한다.
+- Pose Landmarker Lite 모델은 Task 07에서 MediaPipe 0.10.35 VIDEO 모드
+  초기화와 프레임 추론 호환성을 검증했다.
 
 ### 내부 모델
 
@@ -87,12 +88,15 @@ MediaPipe 라이브러리 객체를 후속 모듈에 노출하지 않는다.
 
 ### 포인터 계산
 
-- 2D 방향은 `(wrist.x - elbow.x, wrist.y - elbow.y)`다.
-- 어깨–팔꿈치와 팔꿈치–손목 길이를 검사해 축소된 자세나 잘못된 좌표를 거부한다.
-- 초기 포인터 후보는 손목에서 전완 방향으로 설정 가능한 계수만큼 연장한다.
+- 2D 방향은 긴 기준선인 `(wrist.x - shoulder.x, wrist.y - shoulder.y)`를
+  사용해 손목·팔꿈치 단일 관절 흔들림의 영향을 줄인다.
+- 어깨–팔꿈치와 팔꿈치–손목 길이, 두 구간의 비율과 팔꿈치 각도를 검사해
+  축소되거나 굽은 자세와 잘못된 좌표를 거부한다.
+- 포인터 후보는 손목에서 어깨→손목 방향을 설정 가능한 계수만큼 연장한다.
 - 출력은 Unity 화면 기준으로 합의한 정규화 좌표다.
 - 화면 y축 변환을 Python과 Unity 양쪽에서 중복 적용하지 않는다.
-- 경계 밖 값을 clamp할지 무효 처리할지는 Task 08에서 실제 사용성 검증 후 확정한다.
+- Python은 경계 밖 포인터 후보를 `[0.0, 1.0]`로 clamp한다. 이미지 y축은
+  Python에서 뒤집지 않고 Unity Presenter가 화면 좌표로 한 번만 변환한다.
 
 ### 안전 경계
 
@@ -132,4 +136,6 @@ Pose 좌표는 UI 포인터 입력에만 사용한다. 자세로 부상, 의식,
 
 ## 다음 단계와의 연결
 
-이 설계는 [`Tasks/07-pose-landmarker-runtime.md`](../Tasks/07-pose-landmarker-runtime.md)의 직접 구현 기준이다. Pose 실행과 내부 모델이 검증되면 Task 08에서 tracking 품질, pointing과 pointer 계산을 구현한다.
+이 설계는 [`Tasks/07-pose-landmarker-runtime.md`](../Tasks/07-pose-landmarker-runtime.md)와
+[`Tasks/08-right-arm-pointing-and-quality.md`](../Tasks/08-right-arm-pointing-and-quality.md)에
+구현됐다. 다음 단계는 Task 09의 pose v2 직렬화와 송수신이다.

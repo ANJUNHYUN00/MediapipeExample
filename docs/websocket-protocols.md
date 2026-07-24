@@ -74,7 +74,9 @@ pointer:
   y: finite number, normally 0.0~1.0
 ```
 
-계산 결과가 화면 밖이면 Python의 경계 정책에 따라 clamp하거나 `pointing=false`로 거부한다. 정책은 구현 전에 하나로 고정해야 하며 Unity가 임의로 다른 값을 재계산하지 않는다.
+계산 결과가 화면 밖이면 Python이 `x`, `y`를 각각 `[0.0, 1.0]`로 clamp한다.
+Unity는 범위 안의 값을 그대로 사용하고 포인터를 임의로 재계산하거나 다시
+clamp하지 않는다.
 
 ### `joints`
 
@@ -91,7 +93,7 @@ joints:
 
 ### `visibility`
 
-`rightShoulder`, `rightElbow`, `rightWrist`의 MediaPipe visibility를 `0.0~1.0`로 전달한다. 누락 관절의 visibility는 `0.0`이다. 초기 사용 임계값은 설정으로 관리하고 Task 08에서 실제 환경으로 확정한다.
+`rightShoulder`, `rightElbow`, `rightWrist`의 MediaPipe visibility를 `0.0~1.0`로 전달한다. 누락 관절의 visibility는 `0.0`이다. 초기 사용 임계값은 `0.5`이며 Python 설정으로 관리한다. 대상 카메라 환경의 수동 데이터에 따라 설정값만 조정할 수 있다.
 
 ## 4. 상태별 불변 조건
 

@@ -2,7 +2,7 @@
 
 > 상태: Triage Trace 전환으로 대체됨 (2026-07-24)
 >
-> 이 문서는 기존 Hand/RPS 구현 계획을 이력으로 보존한다. 카메라 루프는 [`07-pose-landmarker-runtime.md`](./07-pose-landmarker-runtime.md)에서 Pose Landmarker 실행과 함께 구현을 완료했으며, 다음 활성 구현은 [`08-right-arm-pointing-and-quality.md`](./08-right-arm-pointing-and-quality.md)다.
+> 이 문서는 기존 Hand/RPS 구현 계획을 이력으로 보존한다. 카메라 루프는 [`07-pose-landmarker-runtime.md`](./07-pose-landmarker-runtime.md)에서 Pose Landmarker 실행과 함께 구현을 완료했으며, 다음 활성 구현은 [`09-pose-v2-publisher-and-unity-receiver.md`](./09-pose-v2-publisher-and-unity-receiver.md)다.
 
 ## 작업 목적
 

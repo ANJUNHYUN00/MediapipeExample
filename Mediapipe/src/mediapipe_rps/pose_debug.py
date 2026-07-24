@@ -6,7 +6,12 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 
-from .pose_models import Joint, PoseTrackingResult, TrackingState
+from .pose_models import (
+    Joint,
+    PosePointerState,
+    PoseTrackingResult,
+    TrackingState,
+)
 
 _STATE_COLORS = {
     TrackingState.TRACKING: (50, 205, 50),
@@ -34,12 +39,33 @@ def format_pose_result(result: PoseTrackingResult) -> str:
     )
 
 
+def format_pointer_state(state: PosePointerState) -> str:
+    """Return Pose coordinates together with the pointing decision."""
+
+    angle = (
+        "missing"
+        if state.elbow_angle_degrees is None
+        else f"{state.elbow_angle_degrees:.1f}"
+    )
+    pointer = (
+        "null"
+        if state.pointer is None
+        else f"x={state.pointer.x:.3f},y={state.pointer.y:.3f}"
+    )
+    return (
+        f"{format_pose_result(state.pose)} "
+        f"pointing={str(state.pointing).lower()} "
+        f"reason={state.reason.value} angle={angle} pointer[{pointer}]"
+    )
+
+
 def render_pose_debug(
     image_bgr: NDArray[np.uint8],
     result: PoseTrackingResult,
     *,
     mirror_preview: bool,
     fps: float,
+    pointer_state: PosePointerState | None = None,
 ) -> NDArray[np.uint8]:
     """Draw the right-arm joints and current state on a preview frame."""
 
@@ -89,10 +115,44 @@ def render_pose_debug(
             cv2.LINE_AA,
         )
 
+    if pointer_state is not None and pointer_state.pointer is not None:
+        pointer_x = (
+            1.0 - pointer_state.pointer.x
+            if mirror_preview
+            else pointer_state.pointer.x
+        )
+        pointer_point = (
+            int(round(pointer_x * (width - 1))),
+            int(round(pointer_state.pointer.y * (height - 1))),
+        )
+        cv2.drawMarker(
+            canvas,
+            pointer_point,
+            (255, 80, 255),
+            cv2.MARKER_CROSS,
+            24,
+            3,
+            cv2.LINE_AA,
+        )
+
+    pointing_label = ""
+    detail_label = f"frame {result.frame_index}  q/esc: quit"
+    if pointer_state is not None:
+        pointing_label = "  POINTING" if pointer_state.pointing else "  NOT POINTING"
+        angle = (
+            "-"
+            if pointer_state.elbow_angle_degrees is None
+            else f"{pointer_state.elbow_angle_degrees:.1f} deg"
+        )
+        detail_label = (
+            f"{pointer_state.reason.value}  elbow {angle}  "
+            f"frame {result.frame_index}"
+        )
+
     cv2.rectangle(canvas, (0, 0), (width, 72), (20, 20, 20), -1)
     cv2.putText(
         canvas,
-        f"{result.tracking.value}  FPS {fps:.1f}",
+        f"{result.tracking.value}{pointing_label}  FPS {fps:.1f}",
         (12, 28),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.7,
@@ -102,7 +162,7 @@ def render_pose_debug(
     )
     cv2.putText(
         canvas,
-        f"frame {result.frame_index}  q/esc: quit",
+        detail_label,
         (12, 56),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.5,

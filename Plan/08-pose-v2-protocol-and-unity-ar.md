@@ -80,7 +80,8 @@ PosePointerMessageV2
 - v2 pointer는 정규화 이미지 좌표다.
 - Unity Presenter가 Canvas 또는 AR 상호작용 평면 좌표로 한 번만 변환한다.
 - 카메라 영상 미러링과 Unity 화면 미러링을 별도 설정으로 둔다.
-- 경계 밖 pointer를 수신하면 계약 위반으로 거부하거나 문서화된 Python clamp 정책을 따른다.
+- Python이 pointer를 `[0.0, 1.0]`로 clamp하므로 Unity는 범위 밖 pointer를
+  계약 위반으로 거부하고 별도로 다시 clamp하거나 재계산하지 않는다.
 
 ### 모의 시나리오 UI
 
@@ -135,4 +136,7 @@ Unity PlayMode:
 
 ## 다음 단계와의 연결
 
-Task 08에서 포인터 상태가 준비되면 [`Tasks/09-pose-v2-publisher-and-unity-receiver.md`](../Tasks/09-pose-v2-publisher-and-unity-receiver.md)에서 v2 메시지 빌더, 게시자와 Unity 수신 기반을 구현한다. 그 후 별도 Unity AR UI Task에서 모의 포인터와 시나리오 화면을 완성한다.
+Task 08에서 포인터 상태가 준비됐다.
+[`Tasks/09-pose-v2-publisher-and-unity-receiver.md`](../Tasks/09-pose-v2-publisher-and-unity-receiver.md)에서
+v2 메시지 빌더, 게시자와 Unity 수신 기반을 구현한다. 그 후 별도 Unity AR UI
+Task에서 모의 포인터와 시나리오 화면을 완성한다.

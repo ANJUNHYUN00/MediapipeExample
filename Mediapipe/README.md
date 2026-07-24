@@ -14,9 +14,11 @@ Triage Trace는 교육·시연용 시뮬레이션이며 실제 환자 평가, �
 - Pose Landmarker Lite 모델 설치와 Python 단독 VIDEO 모드 추적 구현 완료
 - 오른쪽 어깨(12), 팔꿈치(14), 손목(16) 추출과 `TRACKING`·`PARTIAL`·`LOST` 처리 완료
 - 콘솔 좌표 로그와 OpenCV 디버그 오버레이 구현 완료
+- 어깨→손목 방향, 팔꿈치 각도와 visibility 기반 pointing 판정 완료
+- 관절 EMA와 안전한 활성화 디바운스, 정규화 pointer clamp 완료
 
 다음 활성 작업은
-[`Tasks/08-right-arm-pointing-and-quality.md`](../Tasks/08-right-arm-pointing-and-quality.md)다.
+[`Tasks/09-pose-v2-publisher-and-unity-receiver.md`](../Tasks/09-pose-v2-publisher-and-unity-receiver.md)다.
 
 ## 활성 책임
 
@@ -55,7 +57,7 @@ Mediapipe/
       pose_models.py
       pose_tracker.py
       pose_debug.py
-      pointing.py              # 예정
+      pointing.py
       message_builder.py
       websocket_server.py
       hand_tracker.py          # legacy v1
@@ -93,6 +95,26 @@ app
 | `rightWrist` | 16 | 포인팅 방향 끝 |
 
 각 관절은 이미지 정규화 `x`, `y`, 상대 `z`, `visibility`를 가진다. `visibility`는 관절 관측 품질이며 의료 신뢰도가 아니다.
+
+## Pointing 판정
+
+기본값:
+
+| 설정 | 값 | 의미 |
+|---|---:|---|
+| 최소 visibility | `0.5` | 세 관절이 모두 충족해야 함 |
+| 최소 팔꿈치 각도 | `150°` | 팔이 충분히 펴졌는지 검사 |
+| 최소 상완·전완 길이 | `0.05` | 정규화 화면의 퇴화 구간 거부 |
+| 최소 어깨–손목 길이 | `0.10` | 짧은 방향 벡터 거부 |
+| 구간 길이 비율 | `0.25~4.0` | 과도하게 불균형한 관절 배치 거부 |
+| pointer 연장 | `0.25` | 손목에서 어깨→손목 벡터 연장 |
+| EMA alpha | `0.35` | 관절 좌표 흔들림 완화 |
+| 활성화 프레임 | `2` | 순간적인 false positive 억제 |
+
+팔꿈치 각도와 길이는 프레임 종횡비를 반영해 계산한다. pointer 후보는
+`[0.0, 1.0]`로 clamp하며 이미지 y축은 Python에서 뒤집지 않는다.
+`PARTIAL`, `LOST` 또는 기하 검증 실패에서는 이전 pointer를 유지하지 않고
+즉시 `pointing=false`, `pointer=null`로 전환한다.
 
 ## 확정 개발 환경
 
@@ -136,9 +158,10 @@ py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip check
 ```
 
-Task 07 자동 검증은 환경, 모델 자산 무결성, 카메라 수명 주기, Pose 결과
-변환과 디버그 출력을 포함한다. 최신 검증 건수와 실제 카메라 결과는
-[`Tasks/07-pose-landmarker-runtime.md`](../Tasks/07-pose-landmarker-runtime.md)의
+자동 검증은 환경, 모델 자산 무결성, 카메라 수명 주기, Pose 결과 변환,
+pointing 기하와 시간 안정화, 디버그 출력을 포함한다. 최신 검증 건수와 실제
+카메라 결과는
+[`Tasks/08-right-arm-pointing-and-quality.md`](../Tasks/08-right-arm-pointing-and-quality.md)의
 수행 결과를 기준으로 한다.
 
 ## 모델 자산
@@ -167,8 +190,9 @@ Set-Location Mediapipe
 ```
 
 주요 옵션은 `--width`, `--height`, `--model`,
-`--visibility-threshold`, `--log-interval`, `--max-frames`,
-`--no-mirror`다. `q` 또는 `Esc`로 종료하며 콘솔 전용 모드에서는
+`--visibility-threshold`, `--min-elbow-angle`, `--pointer-extension`,
+`--smoothing-alpha`, `--activation-frames`, `--log-interval`,
+`--max-frames`, `--no-mirror`다. `q` 또는 `Esc`로 종료하며 콘솔 전용 모드에서는
 `Ctrl+C`로 종료한다. 유한 실행 smoke test는
 `--no-preview --max-frames 30`으로 수행할 수 있다.
 
@@ -212,7 +236,8 @@ Set-Location Mediapipe
 4. 연결 상태와 pose v2 수신을 확인한다.
 5. 종료 시 Unity 수신기를 먼저 정리하고 Python 카메라·Pose·서버를 종료한다.
 
-Task 07~08에서는 WebSocket 없이 Python만 실행해 Pose와 포인터 계산을 검증한다.
+Task 07~08은 WebSocket 없이 Python만 실행해 Pose와 포인터 계산을 검증했다.
+Task 09에서 pose v2 게시와 Unity 수신 기반을 연결한다.
 
 ## 개인정보와 안전
 
@@ -226,6 +251,10 @@ Task 07~08에서는 WebSocket 없이 Python만 실행해 Pose와 포인터 계�
 
 - 오른팔 가림과 화면 밖 관절에서 `PARTIAL` 전환이 잦을 수 있다.
 - 2D 포인터는 카메라 위치와 원근에 민감하다.
+- 기본 `150°`, visibility `0.5` 임계값은 대상 카메라의 거리·화각에 맞춰
+  수동 조정이 필요할 수 있다.
+- 실제 검증 당시 손목이 화면 밖에 있어 `pointing=true` 장시간 실측은
+  전체 오른팔 구도에서 추가로 확인해야 한다.
 - Lite 모델은 Full·Heavy보다 빠르지만 실제 조명·거리·가림 조건의 정확도는
   대상 장치에서 추가 측정해야 한다.
 - 기존 패키지명과 Hand 모델이 남아 있어 활성 경로를 혼동할 수 있으므로 문서와 모듈 이름으로 분리한다.
