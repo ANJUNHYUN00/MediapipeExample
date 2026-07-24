@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mediapipe-rps"
 version = "0.1.0"
-description = "MediaPipe hand tracking and rock-paper-scissors WebSocket publisher"
+description = "Standalone MediaPipe Pose runtime for the Triage Trace simulation"
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
 dependencies = [

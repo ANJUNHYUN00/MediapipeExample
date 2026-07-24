@@ -11,9 +11,12 @@ Triage Trace는 교육·시연용 시뮬레이션이며 실제 환자 평가, �
 - Unity 프로젝트 환경 구성 완료
 - gesture v1 계약과 fixture 완료
 - Pose v2 문서와 fixture 완료
-- Pose Landmarker 모델 선정·설치와 실제 추적 코드는 아직 미구현
+- Pose Landmarker Lite 모델 설치와 Python 단독 VIDEO 모드 추적 구현 완료
+- 오른쪽 어깨(12), 팔꿈치(14), 손목(16) 추출과 `TRACKING`·`PARTIAL`·`LOST` 처리 완료
+- 콘솔 좌표 로그와 OpenCV 디버그 오버레이 구현 완료
 
-다음 활성 작업은 [`Tasks/07-pose-landmarker-runtime.md`](../Tasks/07-pose-landmarker-runtime.md)다.
+다음 활성 작업은
+[`Tasks/08-right-arm-pointing-and-quality.md`](../Tasks/08-right-arm-pointing-and-quality.md)다.
 
 ## 활성 책임
 
@@ -41,7 +44,7 @@ Mediapipe/
   pyproject.toml
   models/
     hand_landmarker.task       # legacy v1 자산
-    pose_landmarker.task       # Task 07에서 공식 모델 확정 후 추가 예정
+    pose_landmarker_lite.task  # 활성 Pose MVP 자산
     README.md
   src/
     mediapipe_rps/             # 기존 패키지 경로 보존
@@ -49,8 +52,9 @@ Mediapipe/
       config.py
       camera.py
       models.py
-      pose_models.py           # 예정
-      pose_tracker.py          # 예정
+      pose_models.py
+      pose_tracker.py
+      pose_debug.py
       pointing.py              # 예정
       message_builder.py
       websocket_server.py
@@ -103,7 +107,8 @@ app
 | websockets | 16.1.1 |
 | pytest | 8.4.2 |
 
-핵심 버전은 `pyproject.toml`에 고정했다. Pose Landmarker API와 선택 모델의 실제 호환성은 Task 07에서 별도로 검증한다.
+핵심 버전은 `pyproject.toml`에 고정했다. Pose Landmarker Lite 모델은
+MediaPipe 0.10.35의 VIDEO 모드에서 초기화와 합성 프레임 추론을 검증했다.
 
 ## 환경 재현
 
@@ -131,14 +136,45 @@ py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip check
 ```
 
-기존 환경 검증 결과는 `2 passed`, `No broken requirements found`다. 기존 테스트는 설치 환경과 Hand Landmarker 자산을 확인하므로 Task 07에서 Pose 전용 smoke test를 추가해야 한다.
+Task 07 자동 검증은 환경, 모델 자산 무결성, 카메라 수명 주기, Pose 결과
+변환과 디버그 출력을 포함한다. 최신 검증 건수와 실제 카메라 결과는
+[`Tasks/07-pose-landmarker-runtime.md`](../Tasks/07-pose-landmarker-runtime.md)의
+수행 결과를 기준으로 한다.
 
 ## 모델 자산
 
 - `models/hand_landmarker.task`: 기존 gesture v1 실습 자산, 삭제하지 않음
-- `models/pose_landmarker.task`: 아직 없음
+- `models/pose_landmarker_lite.task`: 활성 Pose MVP 자산
 
-Pose 모델은 Task 07에서 공식 MediaPipe 출처와 라이선스를 확인하고, 현재 MediaPipe 0.10.35에서 VIDEO 모드 초기화한 뒤 경로·크기·SHA-256을 기록한다. Hand 모델을 Pose API에 재사용하지 않는다.
+Pose 모델의 공식 출처, 라이선스, 크기와 SHA-256은
+[`models/README.md`](./models/README.md)에 기록했다. Hand 모델을 Pose API에
+재사용하지 않는다.
+
+## Python 단독 실행
+
+PowerShell:
+
+```powershell
+Set-Location Mediapipe
+.\.venv\Scripts\python.exe -m mediapipe_rps.app
+```
+
+기본 카메라가 0번이 아니면 `--camera-index 1`처럼 지정한다. 미리보기 없이
+좌표 로그만 확인하려면 다음과 같이 실행한다.
+
+```powershell
+.\.venv\Scripts\python.exe -m mediapipe_rps.app --no-preview
+```
+
+주요 옵션은 `--width`, `--height`, `--model`,
+`--visibility-threshold`, `--log-interval`, `--max-frames`,
+`--no-mirror`다. `q` 또는 `Esc`로 종료하며 콘솔 전용 모드에서는
+`Ctrl+C`로 종료한다. 유한 실행 smoke test는
+`--no-preview --max-frames 30`으로 수행할 수 있다.
+
+추론에는 원본 비미러 프레임을 사용하므로 12·14·16은 사람의 해부학적
+오른쪽을 뜻한다. 수평 미러링은 사용자 친화적인 디버그 미리보기에만 적용한다.
+카메라 프레임은 저장하거나 네트워크로 전송하지 않는다.
 
 ## WebSocket 계약
 
@@ -188,7 +224,8 @@ Task 07~08에서는 WebSocket 없이 Python만 실행해 Pose와 포인터 계�
 
 ## 알려진 위험
 
-- Pose 모델 자산과 MediaPipe 0.10.35의 조합은 아직 검증되지 않았다.
 - 오른팔 가림과 화면 밖 관절에서 `PARTIAL` 전환이 잦을 수 있다.
 - 2D 포인터는 카메라 위치와 원근에 민감하다.
+- Lite 모델은 Full·Heavy보다 빠르지만 실제 조명·거리·가림 조건의 정확도는
+  대상 장치에서 추가 측정해야 한다.
 - 기존 패키지명과 Hand 모델이 남아 있어 활성 경로를 혼동할 수 있으므로 문서와 모듈 이름으로 분리한다.
