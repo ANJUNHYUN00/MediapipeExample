@@ -1,5 +1,7 @@
 # 02. Python 손 추적 설계
 
+> 레거시 RPS 설계 (2026-07-24): Hand Landmarker 계획은 호환성 이력으로 보존한다. 활성 구현 기준은 [`07-triage-trace-architecture-and-pose-input.md`](./07-triage-trace-architecture-and-pose-input.md)의 Pose Landmarker와 오른쪽 어깨·팔꿈치·손목 입력이다.
+
 ## 목적
 
 Python에서 웹캠 프레임을 안정적으로 수집하고 MediaPipe로 한 손의 21개 랜드마크를 검출해, 카메라와 MediaPipe API에 의존하지 않는 표준 내부 모델로 변환한다. 제스처 분류 단계가 영상 처리 세부사항 없이 랜드마크 데이터만 사용할 수 있게 한다.

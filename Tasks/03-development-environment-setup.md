@@ -2,6 +2,8 @@
 
 > 상태: 완료 (2026-07-23)
 
+> Triage Trace 전환 안내 (2026-07-24): 이 Task의 Python·Unity 환경 결과는 그대로 재사용한다. 기존 RPS 기준의 Task 04 연결은 이력이며, 현재 다음 활성 구현은 [`07-pose-landmarker-runtime.md`](./07-pose-landmarker-runtime.md)다.
+
 ## 작업 목적
 
 Python 손 추적 코드를 실행·테스트할 수 있는 재현 가능한 Python 3.11 환경을 구성하고, Unity LTS 프로젝트를 올바른 Editor로 열 수 있는 상태로 만든다. 의존성 버전과 실제 환경 정보를 기록해 다른 AI 또는 개발자가 같은 명령으로 환경을 재구성할 수 있게 한다.

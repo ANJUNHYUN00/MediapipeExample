@@ -1,5 +1,7 @@
 # 04. WebSocket 프로토콜 및 Python 게시자 설계
 
+> 레거시 v1 설계 (2026-07-24): `hand_gesture` version 1은 변경 없이 보존한다. 활성 `pose_pointer` version 2 설계는 [`08-pose-v2-protocol-and-unity-ar.md`](./08-pose-v2-protocol-and-unity-ar.md)와 [`docs/websocket-protocols.md`](../docs/websocket-protocols.md)를 따른다.
+
 ## 목적
 
 Python의 안정화된 제스처 결과를 Unity가 일관되게 해석할 수 있는 버전 1 JSON 계약으로 변환하고, 로컬 WebSocket 서버를 통해 실시간으로 안전하게 게시한다. 연결 유무가 손 추적 루프를 막지 않도록 네트워크 책임을 분리한다.

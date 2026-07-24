@@ -1,5 +1,7 @@
 # 03. 가위바위보 제스처 분류 설계
 
+> 레거시 RPS 설계 (2026-07-24): 가위바위보 분류는 Triage Trace 활성 범위가 아니다. 현재 입력 설계는 [`07-triage-trace-architecture-and-pose-input.md`](./07-triage-trace-architecture-and-pose-input.md)의 tracking·pointing·pointer를 따른다.
+
 ## 목적
 
 MediaPipe의 21개 손 랜드마크를 손 방향과 화면 기울기에 가능한 한 강인한 특징으로 변환하고, 손가락 상태를 기반으로 주먹, 가위, 보를 분류한다. 프레임별 결과 흔들림을 줄여 Unity에 전달할 안정된 상태를 만든다.

@@ -1,5 +1,9 @@
 # Task 04. 웹캠 루프 및 미리보기 구현
 
+> 상태: Triage Trace 전환으로 대체됨 (2026-07-24)
+>
+> 이 문서는 기존 Hand/RPS 구현 계획을 이력으로 보존한다. 다음 활성 구현은 [`07-pose-landmarker-runtime.md`](./07-pose-landmarker-runtime.md)이며, 카메라 루프도 Pose Landmarker 실행과 함께 구현한다.
+
 ## 작업 목적
 
 OpenCV로 설정된 웹캠을 열고 프레임을 지속적으로 읽어 미리보기 창에 표시하는 독립적인 카메라 계층을 구현한다. 카메라 실패, 사용자 종료, 예외 상황에서도 장치와 창이 확실히 정리되도록 해 MediaPipe 추적 루프의 안정적인 입력을 만든다.

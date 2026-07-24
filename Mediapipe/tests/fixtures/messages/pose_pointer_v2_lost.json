@@ -1,0 +1,19 @@
+{
+  "type": "pose_pointer",
+  "version": 2,
+  "timestamp": 1750000100223,
+  "sequence": 101,
+  "tracking": "LOST",
+  "pointing": false,
+  "pointer": null,
+  "joints": {
+    "rightShoulder": null,
+    "rightElbow": null,
+    "rightWrist": null
+  },
+  "visibility": {
+    "rightShoulder": 0.0,
+    "rightElbow": 0.0,
+    "rightWrist": 0.0
+  }
+}

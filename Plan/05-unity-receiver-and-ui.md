@@ -1,5 +1,7 @@
 # 05. Unity 수신기 및 UI 설계
 
+> 레거시 v1 UI 설계 (2026-07-24): 기존 gesture UI는 호환성 이력이다. Triage Trace의 Pose v2 수신과 모의 AR 포인터는 [`08-pose-v2-protocol-and-unity-ar.md`](./08-pose-v2-protocol-and-unity-ar.md)를 따른다.
+
 ## 목적
 
 Unity가 Python WebSocket 서버에 안정적으로 연결해 버전 1 손 제스처 메시지를 수신·검증하고, Unity 메인 스레드에서 연결 상태와 주먹·가위·보 결과를 직관적으로 표시하도록 한다.

@@ -1,10 +1,10 @@
 # Test fixtures
 
-이 디렉터리는 카메라나 개인 영상 없이 반복 테스트할 수 있는 데이터를 보관한다. 실제 카메라에서 얻은 자료는 영상보다 비식별 수치 랜드마크를 우선하며, 출처와 기대 결과를 함께 기록한다.
+이 디렉터리는 카메라나 개인 영상 없이 Python과 Unity의 계약을 반복 검증할 합성 JSON을 보관한다. 실제 카메라 영상과 개인 식별 데이터는 fixture에 넣지 않는다.
 
-## 버전 1 메시지 fixture
+## 보존된 gesture v1 fixture
 
-`messages/`의 모든 파일은 JSON 문법상 유효하다. `invalid` 파일은 파싱 실패가 아니라 **계약 의미 검증 실패**를 시험한다.
+기존 `hand_gesture` version 1 파일과 의미는 Triage Trace 전환 후에도 변경하지 않는다.
 
 | 파일 | 기대 결과 |
 |---|---|
@@ -12,14 +12,25 @@
 | `hand_gesture_v1_scissors.json` | 수락, `SCISSORS` |
 | `hand_gesture_v1_paper.json` | 수락, `PAPER` |
 | `hand_gesture_v1_unknown.json` | 수락, `UNKNOWN` |
-| `hand_gesture_v1_no_hand.json` | 수락, `NO_HAND` 불변 조건 충족 |
-| `hand_gesture_v1_extra_field.json` | 수락, 알 수 없는 `source` 필드 무시 |
-| `hand_gesture_invalid_version.json` | 거부, 지원하지 않는 `version=2` |
-| `hand_gesture_invalid_gesture.json` | 거부, 정의되지 않은 `THUMBS_UP` |
+| `hand_gesture_v1_no_hand.json` | 수락, `NO_HAND` |
+| `hand_gesture_v1_extra_field.json` | 수락, 추가 필드 무시 |
+| `hand_gesture_invalid_version.json` | 거부, 지원하지 않는 버전 |
+| `hand_gesture_invalid_gesture.json` | 거부, 정의되지 않은 gesture |
 
-이 fixture는 Python 메시지 생성 테스트와 Unity EditMode 파싱 테스트가 함께 사용해야 한다. 필드명이나 enum을 변경할 때 한쪽 사본을 만들지 말고 이 기준 파일과 양쪽 테스트를 함께 갱신한다.
+## Pose pointer v2 fixture
 
-## 예정된 추가 fixture
+| 파일 | 시나리오 | 기대 결과 |
+|---|---|---|
+| `pose_pointer_v2_tracking.json` | 세 관절 정상, pointer 유효 | 수락, 포인터 활성 가능 |
+| `pose_pointer_v2_lost.json` | Pose 추적 실패 | 수락, 포인터 비활성 |
+| `pose_pointer_v2_partial.json` | 오른쪽 손목 좌표 누락 | 수락, 포인터 비활성 |
 
-- MediaPipe 결과를 모사한 21개 정규화 랜드마크
-- 제스처 전환과 손 미검출 안정화 시퀀스
+v2 의미 검증:
+
+- `TRACKING`은 세 관절 좌표가 모두 존재한다.
+- `PARTIAL`, `LOST`는 `pointing=false`, `pointer=null`이다.
+- `LOST`는 세 관절이 모두 null이고 visibility가 모두 0이다.
+- 누락 관절의 visibility는 0이다.
+- visibility는 `0.0~1.0`이다.
+
+정확한 계약은 [`docs/websocket-protocols.md`](../../../docs/websocket-protocols.md)를 따른다. Python 메시지 테스트와 Unity EditMode 테스트는 이 파일들을 공유한다.

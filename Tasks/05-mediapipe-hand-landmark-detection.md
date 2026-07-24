@@ -1,5 +1,9 @@
 # Task 05. MediaPipe 손 랜드마크 검출 구현
 
+> 상태: Triage Trace 전환으로 대체됨 (2026-07-24)
+>
+> 이 문서는 기존 Hand Landmarker 계획을 이력으로 보존한다. 활성 Pose 추적 계획은 [`07-pose-landmarker-runtime.md`](./07-pose-landmarker-runtime.md)를 따른다.
+
 ## 작업 목적
 
 웹캠의 BGR 프레임을 MediaPipe 연속 영상 손 추적기에 전달해 한 손의 21개 정규화 랜드마크, handedness 및 검출 신뢰도를 추출한다. MediaPipe 라이브러리 객체를 후속 제스처 코드에 노출하지 않고 프로젝트 내부 `HandTrackingResult`로 변환한다.

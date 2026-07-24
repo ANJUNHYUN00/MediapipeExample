@@ -1,5 +1,7 @@
 # 01. 아키텍처 및 개발 환경 설계
 
+> Triage Trace 전환 안내 (2026-07-24): 이 문서의 Python/Unity 환경과 책임 분리는 완료된 재사용 기반이다. 활성 Pose 아키텍처는 [`07-triage-trace-architecture-and-pose-input.md`](./07-triage-trace-architecture-and-pose-input.md)를 따른다.
+
 ## 목적
 
 MediaPipe 손 인식 프로세스와 Unity 표시 앱의 책임 경계를 정하고, 이후 구현 단계가 동일한 실행 환경과 데이터 흐름을 기준으로 진행되도록 한다. 개발자가 MediaPipe와 Unity를 독립적으로 실행·검증한 뒤 로컬 WebSocket으로 결합할 수 있는 프로젝트 기반을 마련한다.

@@ -1,0 +1,34 @@
+{
+  "type": "pose_pointer",
+  "version": 2,
+  "timestamp": 1750000100123,
+  "sequence": 100,
+  "tracking": "TRACKING",
+  "pointing": true,
+  "pointer": {
+    "x": 0.72,
+    "y": 0.34
+  },
+  "joints": {
+    "rightShoulder": {
+      "x": 0.58,
+      "y": 0.36,
+      "z": -0.12
+    },
+    "rightElbow": {
+      "x": 0.66,
+      "y": 0.43,
+      "z": -0.16
+    },
+    "rightWrist": {
+      "x": 0.76,
+      "y": 0.38,
+      "z": -0.2
+    }
+  },
+  "visibility": {
+    "rightShoulder": 0.99,
+    "rightElbow": 0.97,
+    "rightWrist": 0.95
+  }
+}
