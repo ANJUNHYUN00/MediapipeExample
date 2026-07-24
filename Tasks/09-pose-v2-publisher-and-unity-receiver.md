@@ -1,6 +1,6 @@
 # Task 09. Pose v2 게시자 및 Unity 수신 기반
 
-> 상태: 대기 — Triage Trace의 다음 활성 구현 Task
+> 상태: 완료 — 2026-07-24 구현 및 Python↔Unity 실소켓 검증 완료
 
 ## 작업 목적
 
@@ -50,3 +50,14 @@ Python `PosePointerState`를 `pose_pointer` version 2 JSON으로 게시하고 Un
 ## 다음 Task와의 연결
 
 후속 Unity AR UI Task에서 정규화 pointer를 Canvas 또는 AR 상호작용 평면으로 변환하고, 비임상 가상 시나리오 hover와 시각 피드백을 구현한다.
+
+## 수행 결과
+
+- Python 카메라 루프와 분리된 `PoseWebSocketPublisher`를 구현했다. 최신 상태 1개만 유지하고 실제 전송 성공 시에만 `sequence`를 증가시키며 기본 20Hz로 제한한다.
+- `PosePointerMessageV2`가 `tracking`, `pointing`, `pointer`, `joints`, `visibility`를 명시적 camelCase JSON으로 직렬화하고 문서의 상태 불변 조건을 검사한다.
+- Unity는 .NET `ClientWebSocket`과 Newtonsoft JSON을 사용한다. 백그라운드 수신기는 Unity API를 호출하지 않고 검증된 최신 상태만 메인 스레드 큐에 전달한다.
+- Unity 파서는 gesture v1과 pose v2를 `type`/`version`으로 분리한다. 잘못된 JSON, 범위·불변 조건 위반, 오래되거나 중복된 sequence는 적용하지 않는다.
+- 자동 부트스트랩된 임시 `OnGUI` 진단 화면에서 연결, tracking, pointing과 최신 포인터를 확인할 수 있다. 연결 끊김, 데이터 만료, `PARTIAL`, `LOST`에서는 포인터를 숨긴다.
+- Python 47개 테스트, `pip check`, Unity EditMode 10개, PlayMode 3개를 통과했다.
+- 합성 Python publisher와 Unity receiver를 함께 실행한 실소켓 PlayMode 통합 테스트 4개를 통과해 Python JSON이 Unity DTO까지 도달함을 확인했다.
+- 환자 선택, 임상 분류와 최종 UI 디자인은 구현하지 않았다.

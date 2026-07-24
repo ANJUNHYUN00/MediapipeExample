@@ -16,9 +16,11 @@ Triage Trace는 교육·시연용 시뮬레이션이며 실제 환자 평가, �
 - 콘솔 좌표 로그와 OpenCV 디버그 오버레이 구현 완료
 - 어깨→손목 방향, 팔꿈치 각도와 visibility 기반 pointing 판정 완료
 - 관절 EMA와 안전한 활성화 디바운스, 정규화 pointer clamp 완료
+- pose v2 명시적 직렬화와 최신 상태 우선 WebSocket publisher 완료
+- 연결·종료·재연결·전송 순서와 실제 WebSocket 송수신 테스트 완료
 
-다음 활성 작업은
-[`Tasks/09-pose-v2-publisher-and-unity-receiver.md`](../Tasks/09-pose-v2-publisher-and-unity-receiver.md)다.
+Task 09까지 완료했으며 다음 권장 작업은 Unity의 비임상 AR 포인터·가상
+시나리오 표시를 별도 Task로 설계하는 것이다.
 
 ## 활성 책임
 
@@ -159,10 +161,10 @@ py -3.11 -m venv .venv
 ```
 
 자동 검증은 환경, 모델 자산 무결성, 카메라 수명 주기, Pose 결과 변환,
-pointing 기하와 시간 안정화, 디버그 출력을 포함한다. 최신 검증 건수와 실제
-카메라 결과는
-[`Tasks/08-right-arm-pointing-and-quality.md`](../Tasks/08-right-arm-pointing-and-quality.md)의
-수행 결과를 기준으로 한다.
+pointing 기하와 시간 안정화, 디버그 출력, pose v2 직렬화와 실제 WebSocket
+수명 주기를 포함한다. 최신 검증 결과는
+[`Tasks/09-pose-v2-publisher-and-unity-receiver.md`](../Tasks/09-pose-v2-publisher-and-unity-receiver.md)를
+기준으로 한다.
 
 ## 모델 자산
 
@@ -189,11 +191,16 @@ Set-Location Mediapipe
 .\.venv\Scripts\python.exe -m mediapipe_rps.app --no-preview
 ```
 
+기본 실행은 `ws://127.0.0.1:8765`에서 pose v2를 최대 15Hz로 게시한다.
+포트나 전송률은 `--websocket-port`, `--publish-hz`로 변경하고 Python 단독
+Pose 진단만 필요하면 `--no-websocket`을 사용한다.
+
 주요 옵션은 `--width`, `--height`, `--model`,
 `--visibility-threshold`, `--min-elbow-angle`, `--pointer-extension`,
 `--smoothing-alpha`, `--activation-frames`, `--log-interval`,
-`--max-frames`, `--no-mirror`다. `q` 또는 `Esc`로 종료하며 콘솔 전용 모드에서는
-`Ctrl+C`로 종료한다. 유한 실행 smoke test는
+`--max-frames`, `--no-mirror`, `--websocket-host`,
+`--websocket-port`, `--publish-hz`, `--no-websocket`이다. `q` 또는 `Esc`로
+종료하며 콘솔 전용 모드에서는 `Ctrl+C`로 종료한다. 유한 실행 smoke test는
 `--no-preview --max-frames 30`으로 수행할 수 있다.
 
 추론에는 원본 비미러 프레임을 사용하므로 12·14·16은 사람의 해부학적
@@ -236,8 +243,9 @@ Set-Location Mediapipe
 4. 연결 상태와 pose v2 수신을 확인한다.
 5. 종료 시 Unity 수신기를 먼저 정리하고 Python 카메라·Pose·서버를 종료한다.
 
-Task 07~08은 WebSocket 없이 Python만 실행해 Pose와 포인터 계산을 검증했다.
-Task 09에서 pose v2 게시와 Unity 수신 기반을 연결한다.
+Task 09에서 pose v2 게시와 Unity 수신 기반을 연결했다. Unity를 먼저 실행한
+경우 수신기는 제한된 간격으로 재연결하며, 잘못된 단일 메시지는 연결 루프를
+종료하지 않는다.
 
 ## 개인정보와 안전
 

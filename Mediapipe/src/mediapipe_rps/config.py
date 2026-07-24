@@ -104,6 +104,34 @@ class PointingConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class WebSocketConfig:
+    """Local pose publisher settings."""
+
+    enabled: bool = True
+    host: str = "127.0.0.1"
+    port: int = 8765
+    publish_hz: float = 15.0
+    startup_timeout_seconds: float = 5.0
+    shutdown_timeout_seconds: float = 5.0
+
+    def __post_init__(self) -> None:
+        if self.host not in {"127.0.0.1", "localhost"}:
+            raise ValueError("WebSocket host must remain local")
+        if not 0 <= self.port <= 65535:
+            raise ValueError("WebSocket port must be between 0 and 65535")
+        if not 0.0 < self.publish_hz <= 60.0:
+            raise ValueError("publish_hz must be greater than 0 and at most 60")
+        if self.startup_timeout_seconds <= 0.0:
+            raise ValueError("startup_timeout_seconds must be greater than zero")
+        if self.shutdown_timeout_seconds <= 0.0:
+            raise ValueError("shutdown_timeout_seconds must be greater than zero")
+
+    @property
+    def uri(self) -> str:
+        return f"ws://{self.host}:{self.port}"
+
+
+@dataclass(frozen=True, slots=True)
 class DebugConfig:
     """Human-readable diagnostics settings."""
 

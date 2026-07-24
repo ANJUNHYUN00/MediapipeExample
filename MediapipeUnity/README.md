@@ -12,9 +12,12 @@
 - Unity Editor: 6000.3.10f1 (`e35f0c77bd8e`)
 - 프로젝트 버전: `ProjectSettings/ProjectVersion.txt`
 - 패키지 기준: `Packages/manifest.json`, `Packages/packages-lock.json`
-- 초기 batch compile: 종료 코드 0, C# 오류 없음
-- WebSocket 패키지: 아직 선택하지 않음
-- Pose v2 DTO, 수신기와 AR UI: 아직 미구현
+- Task 09 batch compile: C# 오류 없음
+- WebSocket: .NET `ClientWebSocket` 사용, 별도 WebSocket 패키지 없음
+- JSON: `com.unity.nuget.newtonsoft-json` 3.2.2
+- pose v2 DTO·검증·재연결 수신기·최신 상태 큐 구현 완료
+- 임시 `OnGUI` 연결/tracking/pointing/포인터 진단 표시 구현 완료
+- EditMode 10개, PlayMode 3개와 Python↔Unity 실소켓 PlayMode 4개 통과
 
 ## 활성 책임
 
@@ -141,8 +144,6 @@ PosePointerMessageV2
 
 ## 실행 순서
 
-통합 구현 후:
-
 1. Python Triage Trace 서버를 실행한다.
 2. Pose 모델, 카메라와 `127.0.0.1:8765` 시작을 확인한다.
 3. Unity Play Mode 또는 빌드를 실행한다.
@@ -150,9 +151,20 @@ PosePointerMessageV2
 5. Unity를 먼저 실행한 경우 재연결 상태에서 Python 시작 후 자동 복구되는지 확인한다.
 6. 종료 시 Unity 수신 작업을 취소하고 Python 서버와 카메라를 정리한다.
 
+씬에 별도 설정이 없어도 Play Mode에서 런타임 부트스트랩이
+`PoseReceiverBehaviour`를 생성한다. 연결 URI 기본값은
+`ws://127.0.0.1:8765`, 재연결 간격은 1초, 데이터 만료 기준은 0.5초다.
+배치 모드에서는 자동 부트스트랩을 생략한다.
+
+## 테스트
+
+Unity Editor Test Runner에서 EditMode와 PlayMode를 실행한다. 실제 Python
+publisher까지 포함하는 조건부 PlayMode 테스트는 환경 변수
+`TRIAGE_TRACE_INTEGRATION_URI=ws://127.0.0.1:8765`를 설정하고 합성 또는 실제
+Python publisher를 먼저 실행한 뒤 수행한다.
+
 ## 다음 작업
 
-1. Python Task 07에서 Pose Landmarker를 실행한다.
-2. Task 08에서 오른쪽 관절 기반 pointer를 계산한다.
-3. Task 09에서 pose v2 게시와 Unity 수신 기반을 구현한다.
-4. 후속 Unity AR Task에서 모의 시나리오와 포인터 표현을 완성한다.
+후속 Unity AR UI Task에서 정규화 pointer를 Canvas 또는 AR 상호작용 평면으로
+변환하고, 비임상 가상 시나리오 hover와 시각 피드백을 구현한다. 환자 선택이나
+실제 의료 판단 기능은 별도 승인 없이 추가하지 않는다.

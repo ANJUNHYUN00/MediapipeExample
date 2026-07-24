@@ -5,16 +5,24 @@ from __future__ import annotations
 import argparse
 import logging
 import time
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Sequence
 
 import cv2
 
 from .camera import Camera, CameraError
-from .config import CameraConfig, DebugConfig, PointingConfig, PoseConfig
+from .config import (
+    CameraConfig,
+    DebugConfig,
+    PointingConfig,
+    PoseConfig,
+    WebSocketConfig,
+)
 from .pointing import PointingPipeline
 from .pose_debug import format_pointer_state, render_pose_debug
 from .pose_tracker import PoseTracker, PoseTrackerError
+from .websocket_server import PoseWebSocketPublisher, PublisherError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -35,6 +43,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--pointer-extension", type=float, default=0.25)
     parser.add_argument("--smoothing-alpha", type=float, default=0.35)
     parser.add_argument("--activation-frames", type=int, default=2)
+    parser.add_argument("--websocket-host", default="127.0.0.1")
+    parser.add_argument("--websocket-port", type=int, default=8765)
+    parser.add_argument("--publish-hz", type=float, default=15.0)
+    parser.add_argument(
+        "--no-websocket",
+        action="store_true",
+        help="disable pose v2 publishing for standalone camera diagnostics",
+    )
     parser.add_argument("--log-interval", type=float, default=1.0)
     parser.add_argument(
         "--max-frames",
@@ -72,6 +88,7 @@ def run(
     camera_config: CameraConfig,
     pose_config: PoseConfig,
     pointing_config: PointingConfig,
+    websocket_config: WebSocketConfig,
     debug_config: DebugConfig,
 ) -> int:
     fps = 0.0
@@ -82,9 +99,18 @@ def run(
     state_counts = {"TRACKING": 0, "PARTIAL": 0, "LOST": 0}
     pointing_frames = 0
     pointing_pipeline = PointingPipeline(pointing_config)
+    publisher_context = (
+        PoseWebSocketPublisher(websocket_config)
+        if websocket_config.enabled
+        else nullcontext(None)
+    )
 
     try:
-        with Camera(camera_config) as camera, PoseTracker(pose_config) as tracker:
+        with (
+            publisher_context as publisher,
+            Camera(camera_config) as camera,
+            PoseTracker(pose_config) as tracker,
+        ):
             LOGGER.info("Pose tracking started. Press q or Esc to quit.")
             while True:
                 frame = camera.read()
@@ -98,6 +124,8 @@ def run(
                 state_counts[result.tracking.value] += 1
                 if pointer_state.pointing:
                     pointing_frames += 1
+                if publisher is not None:
+                    publisher.submit(pointer_state)
 
                 now = time.monotonic()
                 fps = _update_fps(fps, now - previous_frame_time)
@@ -133,7 +161,7 @@ def run(
                     break
     except KeyboardInterrupt:
         LOGGER.info("Pose tracking stopped by user")
-    except (CameraError, PoseTrackerError) as exc:
+    except (CameraError, PoseTrackerError, PublisherError) as exc:
         LOGGER.error("%s", exc)
         return 1
     finally:
@@ -178,6 +206,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             smoothing_alpha=args.smoothing_alpha,
             activation_frames=args.activation_frames,
         )
+        websocket_config = WebSocketConfig(
+            enabled=not args.no_websocket,
+            host=args.websocket_host,
+            port=args.websocket_port,
+            publish_hz=args.publish_hz,
+        )
         debug_config = DebugConfig(
             console_log_interval_seconds=args.log_interval,
             max_frames=args.max_frames,
@@ -186,7 +220,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         LOGGER.error("Invalid configuration: %s", exc)
         return 2
 
-    return run(camera_config, pose_config, pointing_config, debug_config)
+    return run(
+        camera_config,
+        pose_config,
+        pointing_config,
+        websocket_config,
+        debug_config,
+    )
 
 
 if __name__ == "__main__":
