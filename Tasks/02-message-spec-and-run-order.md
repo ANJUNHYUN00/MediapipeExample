@@ -162,7 +162,7 @@ Python 게시자와 Unity 수신자가 독립적으로 구현되어도 같은 �
 
 고정된 프로젝트 구조와 메시지 계약을 바탕으로 [`03-development-environment-setup.md`](./03-development-environment-setup.md)에서 Python 3.11 가상 환경과 의존성을 설치하고, Unity LTS 프로젝트의 실제 생성 여부와 패키지 호환성을 검증한다. Task 03에서 선택한 정확한 버전은 README와 잠금 가능한 설정에 기록한다.
 
-## 수행 결과
+## 수행 결과s
 
 - Python 서버, Unity 클라이언트, `ws://127.0.0.1:8765`, UTF-8 JSON 텍스트, `hand_gesture` 버전 1을 변경 없이 계약 기준으로 확정했다.
 - `Mediapipe/README.md`에 필드 규격, 상태별 불변 조건, Python snake_case와 JSON camelCase 매핑, 송신 전 검증 규칙을 추가했다.

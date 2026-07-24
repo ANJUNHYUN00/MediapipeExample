@@ -16,8 +16,9 @@
 - WebSocket: .NET `ClientWebSocket` 사용, 별도 WebSocket 패키지 없음
 - JSON: `com.unity.nuget.newtonsoft-json` 3.2.2
 - pose v2 DTO·검증·재연결 수신기·최신 상태 큐 구현 완료
-- 임시 `OnGUI` 연결/tracking/pointing/포인터 진단 표시 구현 완료
-- EditMode 10개, PlayMode 3개와 Python↔Unity 실소켓 PlayMode 4개 통과
+- `LineRenderer` 기반 모의 AR 포인터 시각화 구현 완료
+- `OnGUI` 연결/tracking/pointing 진단 표시 구현 완료
+- EditMode 10개, PlayMode 6개와 Python↔Unity 실소켓 PlayMode 4개 통과
 
 ## 활성 책임
 
@@ -66,7 +67,7 @@ Unity `.meta`는 대응 자산과 함께 보존하고 `Library/`, `Temp/`, `Logs
 | `Scripts/Configuration` | URI, 재연결, 데이터 만료, 좌표 변환 설정 |
 | `Scripts/Models` | 분리된 v1/v2 DTO와 검증된 도메인 상태 |
 | `Scripts/Networking` | 연결, 수신, 취소, 재연결, type/version 라우팅, 최신 상태 큐 |
-| `Scripts/Presentation` | tracking과 pointer를 모의 AR 화면으로 표현 |
+| `Scripts/Presentation` | 수신 상태 진단과 `LineRenderer` 포인터 시각화 |
 | `Tests/EditMode` | v1/v2 JSON 파싱, 값과 불변 조건 |
 | `Tests/PlayMode` | 메인 스레드 적용, 포인터 숨김, 데이터 만료, 안전 고지 |
 
@@ -119,18 +120,29 @@ PosePointerMessageV2
 - WebSocket 연결 상태
 - Pose tracking 상태
 - 포인터 활성 여부
-- 최신 유효 pointer의 커서 또는 ray
+- 최신 유효 pointer의 `LineRenderer` ray
 - 데이터 만료·추적 실패 안내
 
 포인터는 `pointing=true`이고 데이터가 최신일 때만 활성화한다. 연결이 유지되더라도 메시지가 만료되면 마지막 위치를 유지하지 않는다.
 
 가상 시나리오의 라벨은 `Scenario A`, `Training Target 1` 같은 비임상 표현을 사용한다. 실제 환자 등급이나 치료 결론을 자동 생성하지 않는다.
 
+### LineRenderer 포인터
+
+- `PoseReceiverBehaviour`는 WebSocket 수신과 검증된 최신 상태 전달만 담당한다.
+- `PosePointerLineRenderer`는 검증된 `PosePointerState`를 받아 선 표시만 담당한다.
+- `Pointer Start`에는 AR 카메라, 컨트롤러, 손목 앵커 등 ray 시작점으로 쓸 `Transform`을 지정한다.
+- `Line Length`, `Line Thickness`, `Line Color`, `Interpolation Speed`, `Timeout Seconds`, `Invert Horizontal`, `Invert Vertical`은 Inspector에서 조정한다.
+- 시작점이 비어 있으면 컴포넌트가 붙은 GameObject의 `Transform`을 사용한다.
+- `LineRenderer`가 비어 있으면 같은 GameObject에 자동으로 생성한다.
+
 ## 좌표 처리
 
 - v2 pointer는 이미지 기준 정규화 좌표다.
-- Presenter가 Canvas 또는 AR 상호작용 평면으로 한 번 변환한다.
-- y축 반전과 미러링은 설정으로 명시하고 Python과 중복 적용하지 않는다.
+- `PosePointerLineRenderer`가 정규화 pointer를 시작점 기준 world 방향으로 한 번 변환한다.
+- 화면 중앙 `(0.5, 0.5)`은 시작점의 `forward` 방향이다.
+- x축은 시작점의 `right`, y축은 이미지 좌표계 보정을 위해 기본적으로 시작점의 `up` 방향으로 변환한다.
+- 좌우/상하 반전은 설정으로 명시하고 Python과 중복 적용하지 않는다.
 - joints와 visibility는 디버그·상태 표시에 사용할 수 있지만 Unity에서 포인터를 다시 계산하지 않는다.
 
 ## 오류 처리
@@ -152,9 +164,14 @@ PosePointerMessageV2
 6. 종료 시 Unity 수신 작업을 취소하고 Python 서버와 카메라를 정리한다.
 
 씬에 별도 설정이 없어도 Play Mode에서 런타임 부트스트랩이
-`PoseReceiverBehaviour`를 생성한다. 연결 URI 기본값은
+`PoseReceiverBehaviour`와 `PosePointerLineRenderer`를 생성한다. 연결 URI 기본값은
 `ws://127.0.0.1:8765`, 재연결 간격은 1초, 데이터 만료 기준은 0.5초다.
 배치 모드에서는 자동 부트스트랩을 생략한다.
+
+씬에서 직접 설정하려면 빈 GameObject를 만들고 `PoseReceiverBehaviour`와
+`PosePointerLineRenderer`를 붙인다. `PoseReceiverBehaviour`의 `Pointer Line`에
+같은 GameObject의 `PosePointerLineRenderer`를 연결하고,
+`PosePointerLineRenderer`의 `Pointer Start`에는 ray를 시작할 Transform을 지정한다.
 
 ## 테스트
 
@@ -165,6 +182,6 @@ Python publisher를 먼저 실행한 뒤 수행한다.
 
 ## 다음 작업
 
-후속 Unity AR UI Task에서 정규화 pointer를 Canvas 또는 AR 상호작용 평면으로
-변환하고, 비임상 가상 시나리오 hover와 시각 피드백을 구현한다. 환자 선택이나
-실제 의료 판단 기능은 별도 승인 없이 추가하지 않는다.
+후속 Unity AR UI Task에서 `LineRenderer` ray가 가리키는 비임상 가상 표적을
+판별하고 hover 시각 피드백을 구현한다. 환자 선택, dwell 확정, 상태 카드와 실제
+의료 판단 기능은 별도 승인 없이 추가하지 않는다.

@@ -47,6 +47,123 @@ namespace TriageTrace.Tests.PlayMode
             yield return null;
         }
 
+        [UnityTest]
+        public IEnumerator LineRendererShowsTrackingPointerAndTimesOut()
+        {
+            var go = new GameObject("pose pointer test");
+            var line = go.AddComponent<LineRenderer>();
+            var visualizer = go.AddComponent<PosePointerLineRenderer>();
+            visualizer.ConfigureForTests(
+                go.transform,
+                line,
+                length: 2.0f,
+                thickness: 0.02f,
+                color: Color.green,
+                smoothing: 0.0f,
+                timeout: 0.1f,
+                invertX: false,
+                invertY: false);
+            visualizer.SetConnected(true);
+            visualizer.Apply(
+                CreateTrackingState(),
+                Time.realtimeSinceStartup);
+
+            yield return null;
+
+            Assert.That(visualizer.IsVisible, Is.True);
+            Assert.That(line.positionCount, Is.EqualTo(2));
+            Assert.That(
+                Vector3.Distance(line.GetPosition(0), go.transform.position),
+                Is.LessThan(0.001f));
+            Assert.That(
+                Vector3.Distance(line.GetPosition(0), line.GetPosition(1)),
+                Is.EqualTo(2.0f).Within(0.01f));
+
+            yield return new WaitForSeconds(0.15f);
+
+            Assert.That(visualizer.IsVisible, Is.False);
+            UnityEngine.Object.Destroy(go);
+        }
+
+        [UnityTest]
+        public IEnumerator LineRendererHidesWhenPoseStopsPointing()
+        {
+            var go = new GameObject("pose pointer invalid test");
+            var line = go.AddComponent<LineRenderer>();
+            var visualizer = go.AddComponent<PosePointerLineRenderer>();
+            visualizer.ConfigureForTests(
+                go.transform,
+                line,
+                length: 1.0f,
+                thickness: 0.02f,
+                color: Color.cyan,
+                smoothing: 0.0f,
+                timeout: 0.5f,
+                invertX: false,
+                invertY: false);
+            visualizer.SetConnected(true);
+            visualizer.Apply(
+                new PosePointerState(
+                    1,
+                    2,
+                    PoseTrackingState.Partial,
+                    false,
+                    null,
+                    new RightArmJointsDto(),
+                    new RightArmVisibilityDto()),
+                Time.realtimeSinceStartup);
+
+            yield return null;
+
+            Assert.That(visualizer.IsVisible, Is.False);
+            UnityEngine.Object.Destroy(go);
+        }
+
+        [UnityTest]
+        public IEnumerator LineRendererCanInvertHorizontalAndVerticalAxes()
+        {
+            var normalObject = new GameObject("pose pointer normal");
+            var invertedObject = new GameObject("pose pointer inverted");
+            var normal = normalObject.AddComponent<PosePointerLineRenderer>();
+            var inverted = invertedObject.AddComponent<PosePointerLineRenderer>();
+            normal.ConfigureForTests(
+                normalObject.transform,
+                normalObject.AddComponent<LineRenderer>(),
+                length: 1.0f,
+                thickness: 0.02f,
+                color: Color.white,
+                smoothing: 0.0f,
+                timeout: 0.5f,
+                invertX: false,
+                invertY: false);
+            inverted.ConfigureForTests(
+                invertedObject.transform,
+                invertedObject.AddComponent<LineRenderer>(),
+                length: 1.0f,
+                thickness: 0.02f,
+                color: Color.white,
+                smoothing: 0.0f,
+                timeout: 0.5f,
+                invertX: true,
+                invertY: true);
+
+            PosePointerState state = CreateTrackingState();
+            normal.SetConnected(true);
+            inverted.SetConnected(true);
+            normal.Apply(state, Time.realtimeSinceStartup);
+            inverted.Apply(state, Time.realtimeSinceStartup);
+
+            yield return null;
+
+            Assert.That(normal.CurrentDirection.x, Is.GreaterThan(0.0f));
+            Assert.That(normal.CurrentDirection.y, Is.GreaterThan(0.0f));
+            Assert.That(inverted.CurrentDirection.x, Is.LessThan(0.0f));
+            Assert.That(inverted.CurrentDirection.y, Is.LessThan(0.0f));
+
+            UnityEngine.Object.Destroy(normalObject);
+            UnityEngine.Object.Destroy(invertedObject);
+        }
+
         [Test]
         public void SafetyNoticeExplicitlyMarksSimulation()
         {

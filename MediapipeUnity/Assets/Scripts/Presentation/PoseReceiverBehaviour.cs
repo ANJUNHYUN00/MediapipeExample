@@ -56,7 +56,7 @@ namespace TriageTrace.Presentation
         private float staleAfterSeconds = 0.5f;
 
         [SerializeField]
-        private bool mirrorPointerX;
+        private PosePointerLineRenderer pointerLine;
 
         private readonly LatestPoseStateQueue _poseQueue =
             new LatestPoseStateQueue();
@@ -68,8 +68,15 @@ namespace TriageTrace.Presentation
             PoseConnectionStatus.Disconnected;
         private string _connectionDetail = string.Empty;
 
+        public PoseDebugPresenterState PresenterState => _presenterState;
+
         private void OnEnable()
         {
+            if (pointerLine == null)
+            {
+                pointerLine = GetComponent<PosePointerLineRenderer>();
+            }
+
             _client = new PoseWebSocketClient(
                 websocketUri,
                 _poseQueue,
@@ -95,6 +102,7 @@ namespace TriageTrace.Presentation
                     statusEvent.Status == PoseConnectionStatus.Error)
                 {
                     _presenterState.SetConnected(connected);
+                    pointerLine?.SetConnected(connected);
                 }
 
                 if (statusEvent.Status == PoseConnectionStatus.InvalidMessage ||
@@ -114,7 +122,9 @@ namespace TriageTrace.Presentation
 
             if (_poseQueue.TryDequeue(out PosePointerState latest))
             {
-                _presenterState.Apply(latest, Time.realtimeSinceStartup);
+                float receivedRealtime = Time.realtimeSinceStartup;
+                _presenterState.Apply(latest, receivedRealtime);
+                pointerLine?.Apply(latest, receivedRealtime);
                 string pointerText = latest.Pointer == null
                     ? "null"
                     : $"({latest.Pointer.X:0.000}, {latest.Pointer.Y:0.000})";
@@ -148,21 +158,6 @@ namespace TriageTrace.Presentation
             }
 
             GUILayout.EndArea();
-
-            if (!_presenterState.IsPointerVisible(
-                    Time.realtimeSinceStartup,
-                    staleAfterSeconds))
-            {
-                return;
-            }
-
-            PointerDto pointer = latest.Pointer;
-            float normalizedX = mirrorPointerX
-                ? 1.0f - (float)pointer.X
-                : (float)pointer.X;
-            float x = normalizedX * Screen.width;
-            float y = (float)pointer.Y * Screen.height;
-            GUI.Box(new Rect(x - 8, y - 8, 16, 16), string.Empty);
         }
 
         private void OnDisable()
@@ -203,6 +198,7 @@ namespace TriageTrace.Presentation
 
             var receiverObject = new GameObject("Triage Trace Pose Receiver");
             Object.DontDestroyOnLoad(receiverObject);
+            receiverObject.AddComponent<PosePointerLineRenderer>();
             receiverObject.AddComponent<PoseReceiverBehaviour>();
         }
     }
