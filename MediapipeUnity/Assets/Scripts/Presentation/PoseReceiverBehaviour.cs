@@ -70,6 +70,11 @@ namespace TriageTrace.Presentation
 
         public PoseDebugPresenterState PresenterState => _presenterState;
 
+        public void SetPointerLine(PosePointerLineRenderer line)
+        {
+            pointerLine = line;
+        }
+
         private void OnEnable()
         {
             if (pointerLine == null)
@@ -200,6 +205,8 @@ namespace TriageTrace.Presentation
             Object.DontDestroyOnLoad(receiverObject);
             receiverObject.AddComponent<PosePointerLineRenderer>();
             receiverObject.AddComponent<PointerRaycaster>();
+            receiverObject.AddComponent<PatientDwellSelector>();
+            receiverObject.AddComponent<TriageTraceScenarioBootstrap>();
             receiverObject.AddComponent<PoseReceiverBehaviour>();
         }
     }

@@ -18,8 +18,10 @@
 - pose v2 DTO·검증·재연결 수신기·최신 상태 큐 구현 완료
 - `LineRenderer` 기반 모의 AR 포인터 시각화 구현 완료
 - Patient interaction state와 Canvas 기반 Patient Status Card UI 구현 완료
+- End-to-End scenario 연결 helper 구현 완료
 - `OnGUI` 연결/tracking/pointing 진단 표시 구현 완료
-- EditMode 10개, PlayMode 6개와 Python↔Unity 실소켓 PlayMode 4개 통과
+- Task 09 기준 EditMode 10개, PlayMode 3개, Python↔Unity 실소켓 PlayMode 4개 통과
+- Task 12~15 PlayMode 테스트는 추가했으나 현재 환경의 Unity licensing 문제로 batchmode 실행 미확인
 
 ## 활성 책임
 
@@ -177,6 +179,38 @@ Mark Checked Button은 `PatientStatusCardUI.MarkChecked()`를 호출한다. 호�
 Checked 표시가 갱신된다. 표시할 Patient가 없으면 카드는 숨김 상태가 되며 버튼은
 비활성화된다.
 
+### End-to-End Scenario Setup
+
+`TriageTraceScenarioBootstrap`은 수동 Inspector 연결을 우선하고, 비어 있는 참조만
+같은 GameObject나 현재 Scene에서 찾아 연결하는 편의 helper다. 자동 생성된 receiver
+object에도 붙지만, 실제 데모 Scene에서는 명시적으로 설정하는 방식을 권장한다.
+
+Unity Scene 체크리스트:
+
+1. Main Camera 또는 AR Simulation Camera를 준비한다.
+2. `PointerOrigin` 빈 GameObject를 만들고 카메라 앞쪽을 향하게 둔다.
+3. 빈 GameObject를 만들고 `PoseReceiverBehaviour`, `PosePointerLineRenderer`,
+   `PointerRaycaster`, `PatientDwellSelector`, `TriageTraceScenarioBootstrap`을 붙인다.
+4. `PoseReceiverBehaviour.Pointer Line`에 같은 GameObject의
+   `PosePointerLineRenderer`를 연결한다.
+5. `PosePointerLineRenderer.Pointer Start`에 `PointerOrigin`을 연결한다.
+6. `PointerRaycaster.Ray Origin`에 `PointerOrigin`을 연결하고
+   `Patient Layer Mask`를 Patient 전용 Layer로 설정한다.
+7. Canvas 아래 `PatientStatusCardUI`를 구성하고 `PatientDwellSelector.Status Card`
+   또는 `TriageTraceScenarioBootstrap.Status Card`에 연결한다.
+8. Patient 오브젝트를 여러 개 만들고 각 오브젝트에 `Collider`, `Renderer`,
+   `PatientView`를 추가한다.
+9. 각 Patient에 같은 Patient Layer를 적용한다.
+10. `PatientView.Display Name`, interaction state 색상, `PatientDwellSelector.Dwell Seconds`
+    를 Inspector에서 조정한다.
+11. Play Mode에서 연결, pointer line, hover `Highlighted`, dwell `InProgress`,
+    status card, Mark Checked, `Checked` 보호 동작을 순서대로 확인한다.
+
+Patient 오브젝트는 raycast hit를 위해 Collider가 필요하고, 상태 색상 표시를 위해
+Renderer가 필요하다. interaction state 색상은 cyan/blue/white/gray 계열을 사용하고
+red/yellow/green/black은 triage severity와 혼동될 수 있으므로 interaction UI에
+사용하지 않는다.
+
 ## 좌표 처리
 
 - v2 pointer는 이미지 기준 정규화 좌표다.
@@ -195,14 +229,21 @@ Checked 표시가 갱신된다. 표시할 Patient가 없으면 카드는 숨김 
 - sequence 역행 메시지를 무시한다.
 - 데이터 만료와 연결 끊김을 별도 상태로 진단한다.
 
-## 실행 순서
+## End-to-End 실행 순서
 
-1. Python Triage Trace 서버를 실행한다.
-2. Pose 모델, 카메라와 `127.0.0.1:8765` 시작을 확인한다.
-3. Unity Play Mode 또는 빌드를 실행한다.
-4. 연결과 pose v2 수신, 포인터 표시를 확인한다.
-5. Unity를 먼저 실행한 경우 재연결 상태에서 Python 시작 후 자동 복구되는지 확인한다.
-6. 종료 시 Unity 수신 작업을 취소하고 Python 서버와 카메라를 정리한다.
+1. PowerShell에서 Python 가상환경을 활성화한다.
+   `Set-Location C:\Projects\MediapipeExample\Mediapipe`
+2. MediaPipe Pose publisher를 실행한다.
+   `.\.venv\Scripts\python.exe -m mediapipe_rps.app`
+3. 카메라, Pose 모델, `ws://127.0.0.1:8765` 시작 로그를 확인한다.
+4. Unity Hub에서 `MediapipeUnity` 프로젝트를 연다.
+5. Scene의 receiver, pointer, raycaster, dwell selector, status card, Patient Layer 설정을 확인한다.
+6. Unity Play Mode를 실행한다.
+7. 오른팔을 카메라 안에서 펴고 pointing 상태에서 `LineRenderer` ray가 움직이는지 확인한다.
+8. ray가 Patient collider를 hit하면 `Highlighted`가 되는지 확인한다.
+9. 같은 Patient를 `Dwell Seconds` 이상 가리켜 `InProgress`와 status card 표시를 확인한다.
+10. Mark Checked 버튼을 눌러 `Checked` 상태가 유지되는지 확인한다.
+11. 종료 시 Unity Play Mode를 중지하고 Python 앱에서 `q`, `Esc` 또는 `Ctrl+C`로 서버와 카메라를 정리한다.
 
 씬에 별도 설정이 없어도 Play Mode에서 런타임 부트스트랩이
 `PoseReceiverBehaviour`와 `PosePointerLineRenderer`를 생성한다. 연결 URI 기본값은
@@ -214,6 +255,15 @@ Checked 표시가 갱신된다. 표시할 Patient가 없으면 카드는 숨김 
 같은 GameObject의 `PosePointerLineRenderer`를 연결하고,
 `PosePointerLineRenderer`의 `Pointer Start`에는 ray를 시작할 Transform을 지정한다.
 
+## Known limitations
+
+- 실제 AR hardware 없이 Unity desktop simulation MVP로 동작한다.
+- Pose 입력은 PC webcam 기반이며 조명, 거리, 카메라 각도, 오른팔 가림에 민감하다.
+- Unity는 Python이 보낸 pose v2 pointer를 소비하며 Pose를 다시 추론하지 않는다.
+- 이 UI는 interaction tracking UI이며 의료 판단, 자동 진단, 중증도 판단 AI가 아니다.
+- Unity licensing 문제로 batchmode PlayMode 테스트 실행이 제한될 수 있다.
+- 최종 demo polish, 발표/포트폴리오 설명, limitation 정리는 Task 16 범위다.
+
 ## 테스트
 
 Unity Editor Test Runner에서 EditMode와 PlayMode를 실행한다. 실제 Python
@@ -223,6 +273,5 @@ Python publisher를 먼저 실행한 뒤 수행한다.
 
 ## 다음 작업
 
-후속 Unity AR UI Task에서 `LineRenderer` ray가 가리키는 비임상 가상 표적을
-판별하고 hover 시각 피드백을 구현한다. 환자 선택, dwell 확정, 상태 카드와 실제
-의료 판단 기능은 별도 승인 없이 추가하지 않는다.
+다음 Task 16에서 README, demo scenario, known limitations, 발표/포트폴리오 설명을
+최종 정리한다. 실제 의료 판단 기능은 추가하지 않는다.

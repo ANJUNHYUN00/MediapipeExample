@@ -49,4 +49,20 @@ Python MediaPipe Pose 실행부터 Unity WebSocket 수신, pointer visualization
 
 ## Status
 
-계획.
+완료. Unity Presentation 계층에 `TriageTraceScenarioBootstrap` helper를 추가하고, 기존 receiver bootstrap을 Task 15 흐름에 맞게 확장했다.
+
+구현 결과:
+
+- `PoseReceiverBehaviour`, `PosePointerLineRenderer`, `PointerRaycaster`, `PatientDwellSelector`, `PatientStatusCardUI`를 한 scenario 흐름으로 연결할 수 있게 했다.
+- `TriageTraceScenarioBootstrap`은 명시적 Inspector 연결을 우선하고, 비어 있는 참조만 같은 GameObject 또는 현재 Scene에서 찾아 연결한다.
+- `TriageTraceScenarioBootstrap`은 status card가 없고 `Create Status Card If Missing`이 켜져 있으면 기본 Canvas 기반 card를 생성한다.
+- 기존 자동 `PoseReceiverBootstrap`은 receiver object에 `PointerRaycaster`, `PatientDwellSelector`, `TriageTraceScenarioBootstrap`도 붙여 편의 연결을 제공한다.
+- `PoseReceiverBehaviour.SetPointerLine()`을 추가해 scenario helper가 pointer line을 명시적으로 연결할 수 있게 했다.
+- README에 Unity Scene 설정 체크리스트, Patient Collider/Renderer/Layer 요구사항, Patient Layer Mask 설정, Patient Status Card Canvas 설정, End-to-End 실행 순서와 known limitations를 추가했다.
+- WebSocket pose v2 DTO 구조는 변경하지 않았다.
+- 의료 중증도 판단, 자동 진단, triage severity 판정 로직은 추가하지 않았다.
+
+검증 결과:
+
+- PlayMode 테스트를 추가해 `TriageTraceScenarioBootstrap`이 pointer line, raycast, dwell selection, status card, Mark Checked, checked 보호 흐름을 연결하도록 검증한다.
+- Unity batchmode PlayMode 테스트는 현재 환경의 Unity licensing 초기화 실패로 완료하지 못했다. 상세 로그는 `MediapipeUnity/Logs/task15-playmode.log`를 확인한다.

@@ -26,7 +26,7 @@ Triage Trace는 자동 의료 진단 시스템이나 중증도 판단 AI가 아�
 | Task 12 | 완료 | 같은 Patient를 기본 0.7초 동안 가리키면 selected 처리하는 dwell 선택 |
 | Task 13 | 완료 | Patient interaction state를 `Unseen`, `Highlighted`, `InProgress`, `Checked`로 분리 |
 | Task 14 | 완료 | 선택된 Patient 상태를 AR HUD 카드로 표시 |
-| Task 15 | 계획 | Python Pose부터 Unity UI 카드까지 end-to-end 시나리오 통합 |
+| Task 15 | 완료 | Python Pose부터 Unity UI 카드까지 end-to-end 시나리오 통합 |
 | Task 16 | 계획 | README, 실행 순서, 데모 시나리오, 발표·포트폴리오 설명과 known limitations 정리 |
 
 ## 설계 개요
@@ -62,4 +62,4 @@ PoseReceiverBehaviour
 
 ## 다음 Task
 
-다음 실제 구현 Task는 [`Tasks/15-end-to-end-scenario-integration.md`](../Tasks/15-end-to-end-scenario-integration.md)이다.
+다음 실제 구현 Task는 [`Tasks/16-polish-qa-portfolio-packaging.md`](../Tasks/16-polish-qa-portfolio-packaging.md)이다.

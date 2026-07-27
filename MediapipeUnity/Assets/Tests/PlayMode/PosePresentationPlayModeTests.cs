@@ -650,6 +650,71 @@ namespace TriageTrace.Tests.PlayMode
             UnityEngine.Object.Destroy(patient);
         }
 
+        [UnityTest]
+        public IEnumerator ScenarioBootstrapConnectsEndToEndPresentationFlow()
+        {
+            int patientLayer = 3;
+            var scenarioObject = new GameObject("scenario bootstrap");
+            var visualizer =
+                scenarioObject.AddComponent<PosePointerLineRenderer>();
+            visualizer.ConfigureForTests(
+                scenarioObject.transform,
+                scenarioObject.AddComponent<LineRenderer>(),
+                length: 4.0f,
+                thickness: 0.02f,
+                color: Color.white,
+                smoothing: 0.0f,
+                timeout: 0.5f,
+                invertX: false,
+                invertY: false);
+            scenarioObject.AddComponent<PointerRaycaster>();
+            scenarioObject.AddComponent<PatientDwellSelector>();
+            var bootstrap =
+                scenarioObject.AddComponent<TriageTraceScenarioBootstrap>();
+            bootstrap.ResolveReferences();
+            bootstrap.ConnectComponents();
+
+            PatientStatusCardUI card =
+                UnityEngine.Object.FindFirstObjectByType<PatientStatusCardUI>();
+            Assert.That(card, Is.Not.Null);
+
+            GameObject patient = CreatePatient(
+                "bootstrap patient",
+                new Vector3(0.0f, 0.0f, 4.0f),
+                patientLayer,
+                Color.gray,
+                out PatientView patientView);
+
+            visualizer.SetConnected(true);
+            visualizer.Apply(CreatePointerState(0.5, 0.5), Time.realtimeSinceStartup);
+            yield return new WaitForSeconds(0.8f);
+            yield return null;
+
+            Assert.That(
+                patientView.InteractionState,
+                Is.EqualTo(PatientInteractionState.InProgress));
+            Assert.That(card.BoundPatient, Is.SameAs(patientView));
+
+            card.MarkChecked();
+            yield return null;
+
+            Assert.That(
+                patientView.InteractionState,
+                Is.EqualTo(PatientInteractionState.Checked));
+
+            visualizer.Apply(CreatePointerState(0.5, 0.5), Time.realtimeSinceStartup);
+            yield return new WaitForSeconds(0.8f);
+            yield return null;
+
+            Assert.That(
+                patientView.InteractionState,
+                Is.EqualTo(PatientInteractionState.Checked));
+
+            UnityEngine.Object.Destroy(scenarioObject);
+            UnityEngine.Object.Destroy(card.gameObject.transform.root.gameObject);
+            UnityEngine.Object.Destroy(patient);
+        }
+
         [Test]
         public void SafetyNoticeExplicitlyMarksSimulation()
         {
