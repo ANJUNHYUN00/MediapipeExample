@@ -164,6 +164,274 @@ namespace TriageTrace.Tests.PlayMode
             UnityEngine.Object.Destroy(invertedObject);
         }
 
+        [UnityTest]
+        public IEnumerator PointerRaycasterHighlightsOnlyCurrentPatient()
+        {
+            int patientLayer = 3;
+            var pointerObject = new GameObject("pose pointer raycaster");
+            var visualizer = pointerObject.AddComponent<PosePointerLineRenderer>();
+            visualizer.ConfigureForTests(
+                pointerObject.transform,
+                pointerObject.AddComponent<LineRenderer>(),
+                length: 4.0f,
+                thickness: 0.02f,
+                color: Color.white,
+                smoothing: 0.0f,
+                timeout: 0.5f,
+                invertX: false,
+                invertY: false);
+            visualizer.SetConnected(true);
+
+            var raycaster = pointerObject.AddComponent<PointerRaycaster>();
+            raycaster.ConfigureForTests(
+                visualizer,
+                pointerObject.transform,
+                1 << patientLayer,
+                10.0f);
+
+            GameObject first = CreatePatient(
+                "first patient",
+                new Vector3(0.0f, 0.0f, 4.0f),
+                patientLayer,
+                Color.gray,
+                out PatientView firstPatient);
+            GameObject second = CreatePatient(
+                "second patient",
+                new Vector3(3.6f, 0.0f, 4.0f),
+                patientLayer,
+                Color.gray,
+                out PatientView secondPatient);
+
+            visualizer.Apply(CreatePointerState(0.5, 0.5), Time.realtimeSinceStartup);
+            yield return null;
+            yield return new WaitForFixedUpdate();
+            yield return null;
+
+            Assert.That(raycaster.CurrentPatient, Is.SameAs(firstPatient));
+            Assert.That(firstPatient.IsHighlighted, Is.True);
+            Assert.That(secondPatient.IsHighlighted, Is.False);
+
+            visualizer.Apply(CreatePointerState(0.95, 0.5), Time.realtimeSinceStartup);
+            yield return null;
+            yield return new WaitForFixedUpdate();
+            yield return null;
+
+            Assert.That(raycaster.CurrentPatient, Is.SameAs(secondPatient));
+            Assert.That(firstPatient.IsHighlighted, Is.False);
+            Assert.That(secondPatient.IsHighlighted, Is.True);
+
+            UnityEngine.Object.Destroy(pointerObject);
+            UnityEngine.Object.Destroy(first);
+            UnityEngine.Object.Destroy(second);
+        }
+
+        [UnityTest]
+        public IEnumerator PointerRaycasterClearsHighlightWhenPointerHidden()
+        {
+            int patientLayer = 3;
+            var pointerObject = new GameObject("pose pointer clear raycaster");
+            var visualizer = pointerObject.AddComponent<PosePointerLineRenderer>();
+            visualizer.ConfigureForTests(
+                pointerObject.transform,
+                pointerObject.AddComponent<LineRenderer>(),
+                length: 4.0f,
+                thickness: 0.02f,
+                color: Color.white,
+                smoothing: 0.0f,
+                timeout: 0.5f,
+                invertX: false,
+                invertY: false);
+            visualizer.SetConnected(true);
+
+            var raycaster = pointerObject.AddComponent<PointerRaycaster>();
+            raycaster.ConfigureForTests(
+                visualizer,
+                pointerObject.transform,
+                1 << patientLayer,
+                10.0f);
+
+            GameObject patient = CreatePatient(
+                "clear patient",
+                new Vector3(0.0f, 0.0f, 4.0f),
+                patientLayer,
+                Color.gray,
+                out PatientView patientView);
+
+            visualizer.Apply(CreatePointerState(0.5, 0.5), Time.realtimeSinceStartup);
+            yield return null;
+            yield return new WaitForFixedUpdate();
+            yield return null;
+
+            Assert.That(patientView.IsHighlighted, Is.True);
+
+            visualizer.SetConnected(false);
+            yield return null;
+
+            Assert.That(raycaster.CurrentPatient, Is.Null);
+            Assert.That(patientView.IsHighlighted, Is.False);
+
+            UnityEngine.Object.Destroy(pointerObject);
+            UnityEngine.Object.Destroy(patient);
+        }
+
+        [UnityTest]
+        public IEnumerator DwellSelectorSelectsCurrentPatientAfterThreshold()
+        {
+            int patientLayer = 3;
+            GameObject pointerObject = CreatePointerRig(
+                "dwell selector",
+                patientLayer,
+                out PosePointerLineRenderer visualizer,
+                out PointerRaycaster raycaster);
+            var selector = pointerObject.AddComponent<PatientDwellSelector>();
+            selector.ConfigureForTests(raycaster, 0.1f);
+
+            GameObject patient = CreatePatient(
+                "dwell patient",
+                new Vector3(0.0f, 0.0f, 4.0f),
+                patientLayer,
+                Color.gray,
+                out PatientView patientView);
+
+            visualizer.Apply(CreatePointerState(0.5, 0.5), Time.realtimeSinceStartup);
+            yield return new WaitForSeconds(0.15f);
+            yield return null;
+
+            Assert.That(selector.SelectedPatient, Is.SameAs(patientView));
+            Assert.That(patientView.IsSelected, Is.True);
+
+            UnityEngine.Object.Destroy(pointerObject);
+            UnityEngine.Object.Destroy(patient);
+        }
+
+        [UnityTest]
+        public IEnumerator DwellSelectorResetsTimerWhenPatientChanges()
+        {
+            int patientLayer = 3;
+            GameObject pointerObject = CreatePointerRig(
+                "dwell switch selector",
+                patientLayer,
+                out PosePointerLineRenderer visualizer,
+                out PointerRaycaster raycaster);
+            var selector = pointerObject.AddComponent<PatientDwellSelector>();
+            selector.ConfigureForTests(raycaster, 0.2f);
+
+            GameObject first = CreatePatient(
+                "first dwell patient",
+                new Vector3(0.0f, 0.0f, 4.0f),
+                patientLayer,
+                Color.gray,
+                out PatientView firstPatient);
+            GameObject second = CreatePatient(
+                "second dwell patient",
+                new Vector3(3.6f, 0.0f, 4.0f),
+                patientLayer,
+                Color.gray,
+                out PatientView secondPatient);
+
+            visualizer.Apply(CreatePointerState(0.5, 0.5), Time.realtimeSinceStartup);
+            yield return new WaitForSeconds(0.12f);
+            yield return null;
+
+            visualizer.Apply(CreatePointerState(0.95, 0.5), Time.realtimeSinceStartup);
+            yield return new WaitForSeconds(0.12f);
+            yield return null;
+
+            Assert.That(firstPatient.IsSelected, Is.False);
+            Assert.That(secondPatient.IsSelected, Is.False);
+
+            yield return new WaitForSeconds(0.12f);
+            yield return null;
+
+            Assert.That(selector.SelectedPatient, Is.SameAs(secondPatient));
+            Assert.That(firstPatient.IsSelected, Is.False);
+            Assert.That(secondPatient.IsSelected, Is.True);
+
+            UnityEngine.Object.Destroy(pointerObject);
+            UnityEngine.Object.Destroy(first);
+            UnityEngine.Object.Destroy(second);
+        }
+
+        [UnityTest]
+        public IEnumerator DwellSelectorResetsTimerWhenPointerHidden()
+        {
+            int patientLayer = 3;
+            GameObject pointerObject = CreatePointerRig(
+                "dwell hidden selector",
+                patientLayer,
+                out PosePointerLineRenderer visualizer,
+                out PointerRaycaster raycaster);
+            var selector = pointerObject.AddComponent<PatientDwellSelector>();
+            selector.ConfigureForTests(raycaster, 0.2f);
+
+            GameObject patient = CreatePatient(
+                "hidden dwell patient",
+                new Vector3(0.0f, 0.0f, 4.0f),
+                patientLayer,
+                Color.gray,
+                out PatientView patientView);
+
+            visualizer.Apply(CreatePointerState(0.5, 0.5), Time.realtimeSinceStartup);
+            yield return new WaitForSeconds(0.12f);
+            yield return null;
+
+            visualizer.SetConnected(false);
+            yield return new WaitForSeconds(0.15f);
+            yield return null;
+
+            Assert.That(selector.CurrentDwellPatient, Is.Null);
+            Assert.That(selector.DwellTimer, Is.EqualTo(0.0f).Within(0.001f));
+            Assert.That(selector.SelectedPatient, Is.Null);
+            Assert.That(patientView.IsSelected, Is.False);
+
+            UnityEngine.Object.Destroy(pointerObject);
+            UnityEngine.Object.Destroy(patient);
+        }
+
+        [UnityTest]
+        public IEnumerator DwellSelectorKeepsOnlyOnePatientSelected()
+        {
+            int patientLayer = 3;
+            GameObject pointerObject = CreatePointerRig(
+                "single selected dwell selector",
+                patientLayer,
+                out PosePointerLineRenderer visualizer,
+                out PointerRaycaster raycaster);
+            var selector = pointerObject.AddComponent<PatientDwellSelector>();
+            selector.ConfigureForTests(raycaster, 0.1f);
+
+            GameObject first = CreatePatient(
+                "first selected patient",
+                new Vector3(0.0f, 0.0f, 4.0f),
+                patientLayer,
+                Color.gray,
+                out PatientView firstPatient);
+            GameObject second = CreatePatient(
+                "second selected patient",
+                new Vector3(3.6f, 0.0f, 4.0f),
+                patientLayer,
+                Color.gray,
+                out PatientView secondPatient);
+
+            visualizer.Apply(CreatePointerState(0.5, 0.5), Time.realtimeSinceStartup);
+            yield return new WaitForSeconds(0.15f);
+            yield return null;
+
+            Assert.That(firstPatient.IsSelected, Is.True);
+
+            visualizer.Apply(CreatePointerState(0.95, 0.5), Time.realtimeSinceStartup);
+            yield return new WaitForSeconds(0.15f);
+            yield return null;
+
+            Assert.That(selector.SelectedPatient, Is.SameAs(secondPatient));
+            Assert.That(firstPatient.IsSelected, Is.False);
+            Assert.That(secondPatient.IsSelected, Is.True);
+
+            UnityEngine.Object.Destroy(pointerObject);
+            UnityEngine.Object.Destroy(first);
+            UnityEngine.Object.Destroy(second);
+        }
+
         [Test]
         public void SafetyNoticeExplicitlyMarksSimulation()
         {
@@ -219,12 +487,17 @@ namespace TriageTrace.Tests.PlayMode
 
         private static PosePointerState CreateTrackingState()
         {
+            return CreatePointerState(0.7, 0.3);
+        }
+
+        private static PosePointerState CreatePointerState(double x, double y)
+        {
             return new PosePointerState(
                 1,
                 1,
                 PoseTrackingState.Tracking,
                 true,
-                new PointerDto { X = 0.7, Y = 0.3 },
+                new PointerDto { X = x, Y = y },
                 new RightArmJointsDto
                 {
                     RightShoulder = new JointDto(),
@@ -237,6 +510,60 @@ namespace TriageTrace.Tests.PlayMode
                     RightElbow = 0.9,
                     RightWrist = 0.9
                 });
+        }
+
+        private static GameObject CreatePatient(
+            string name,
+            Vector3 position,
+            int layer,
+            Color baseColor,
+            out PatientView patientView)
+        {
+            GameObject patient = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            patient.name = name;
+            patient.layer = layer;
+            patient.transform.position = position;
+            patient.transform.localScale = Vector3.one;
+
+            var renderer = patient.GetComponent<Renderer>();
+            renderer.material.color = baseColor;
+
+            patientView = patient.AddComponent<PatientView>();
+            patientView.ConfigureForTests(
+                new[] { renderer },
+                Color.yellow,
+                "_Color",
+                selectionColor: Color.cyan);
+            return patient;
+        }
+
+        private static GameObject CreatePointerRig(
+            string name,
+            int patientLayer,
+            out PosePointerLineRenderer visualizer,
+            out PointerRaycaster raycaster)
+        {
+            var pointerObject = new GameObject(name);
+            visualizer = pointerObject.AddComponent<PosePointerLineRenderer>();
+            visualizer.ConfigureForTests(
+                pointerObject.transform,
+                pointerObject.AddComponent<LineRenderer>(),
+                length: 4.0f,
+                thickness: 0.02f,
+                color: Color.white,
+                smoothing: 0.0f,
+                timeout: 0.5f,
+                invertX: false,
+                invertY: false);
+            visualizer.SetConnected(true);
+
+            raycaster = pointerObject.AddComponent<PointerRaycaster>();
+            raycaster.ConfigureForTests(
+                visualizer,
+                pointerObject.transform,
+                1 << patientLayer,
+                10.0f);
+            return pointerObject;
         }
     }
 }

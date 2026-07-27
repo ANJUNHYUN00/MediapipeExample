@@ -136,7 +136,4 @@ Unity PlayMode:
 
 ## 다음 단계와의 연결
 
-Task 08에서 포인터 상태가 준비됐다.
-[`Tasks/09-pose-v2-publisher-and-unity-receiver.md`](../Tasks/09-pose-v2-publisher-and-unity-receiver.md)에서
-v2 메시지 빌더, 게시자와 Unity 수신 기반을 구현한다. 그 후 별도 Unity AR UI
-Task에서 모의 포인터와 시나리오 화면을 완성한다.
+Task 08에서 포인터 상태가 준비됐고, [`Tasks/09-pose-v2-publisher-and-unity-receiver.md`](../Tasks/09-pose-v2-publisher-and-unity-receiver.md)에서 v2 메시지 빌더, 게시자와 Unity 수신 기반을 구현했다. Unity 시나리오 상호작용의 후속 흐름은 [`Plan/09-unity-scenario-interaction-and-completion.md`](./09-unity-scenario-interaction-and-completion.md)와 Task 10~16을 따른다.

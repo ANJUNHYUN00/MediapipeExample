@@ -24,11 +24,19 @@ MVP 입력은 다음 세 Pose Landmarker 관절로 제한한다.
 | [`docs/websocket-protocols.md`](./docs/websocket-protocols.md) | 보존된 gesture v1과 활성 pose v2 계약 | Python·Unity 데이터 변경 전에 |
 | [`Plan/07-triage-trace-architecture-and-pose-input.md`](./Plan/07-triage-trace-architecture-and-pose-input.md) | Pose 기반 아키텍처와 오른팔 입력 설계 | Pose 구현 전에 |
 | [`Plan/08-pose-v2-protocol-and-unity-ar.md`](./Plan/08-pose-v2-protocol-and-unity-ar.md) | pose v2 게시·수신·Unity AR 표시 설계 | 통신·Unity 구현 전에 |
+| [`Plan/09-unity-scenario-interaction-and-completion.md`](./Plan/09-unity-scenario-interaction-and-completion.md) | Unity 포인터·Patient 상호작용·완료 흐름 설계 | Task 10 이후 Unity 시나리오 구현 전에 |
 | [`Tasks/07-pose-landmarker-runtime.md`](./Tasks/07-pose-landmarker-runtime.md) | 완료: Pose Landmarker 실행과 오른팔 관절 추출 | Pose 런타임 변경 전 |
 | [`Tasks/08-right-arm-pointing-and-quality.md`](./Tasks/08-right-arm-pointing-and-quality.md) | 완료: 오른팔 관절 품질과 안정화된 포인터 계산 | pointing 변경 전 |
 | [`Tasks/09-pose-v2-publisher-and-unity-receiver.md`](./Tasks/09-pose-v2-publisher-and-unity-receiver.md) | 완료: pose v2 송수신과 Unity 연결 | 통신·Unity 수신 변경 전 |
+| [`Tasks/10-unity-ar-pointer-visualization.md`](./Tasks/10-unity-ar-pointer-visualization.md) | 완료: Unity LineRenderer 기반 pose pointer 시각화 | 포인터 표시 변경 전 |
+| [`Tasks/11-patient-raycast-hover-highlighting.md`](./Tasks/11-patient-raycast-hover-highlighting.md) | 완료: Patient raycast hover highlight | Patient hover 변경 전 |
+| [`Tasks/12-dwell-selection.md`](./Tasks/12-dwell-selection.md) | 완료: dwell 기반 Patient 선택 | 선택 상호작용 변경 전 |
+| [`Tasks/13-patient-state-machine.md`](./Tasks/13-patient-state-machine.md) | 계획: Patient interaction state machine | Patient 상태 구현 전 |
+| [`Tasks/14-patient-status-card-ui.md`](./Tasks/14-patient-status-card-ui.md) | 계획: 선택 Patient 상태 카드 UI | HUD 구현 전 |
+| [`Tasks/15-end-to-end-scenario-integration.md`](./Tasks/15-end-to-end-scenario-integration.md) | 계획: Pose부터 UI까지 통합 시나리오 | 통합 검증 전 |
+| [`Tasks/16-polish-qa-portfolio-packaging.md`](./Tasks/16-polish-qa-portfolio-packaging.md) | 계획: QA, README, 포트폴리오 정리 | 완료 정리 전 |
 
-기존 `Plan/01`~`06`, `Tasks/01`~`06`, `hand_gesture` fixture와 Hand Landmarker 자산은 삭제하지 않는다. 완료된 Task 01~03과 Task 07~09는 재사용 기반이며, 미완료 Hand/RPS Task 04~06은 레거시 참조로 보존한다. 다음 권장 구현은 비임상 Unity AR 포인터와 가상 시나리오 표시 Task다.
+기존 `Plan/01`~`06`, `Tasks/01`~`06`, `hand_gesture` fixture와 Hand Landmarker 자산은 삭제하지 않는다. 완료된 Task 01~03과 Task 07~12는 재사용 기반이며, 미완료 Hand/RPS Task 04~06은 레거시 참조로 보존한다. 다음 권장 구현은 Task 13 Patient state machine이다.
 
 ## 3. 핵심 아키텍처
 
@@ -110,6 +118,7 @@ Unity WebSocket 클라이언트, pose v2 검증, 메인 스레드 전달, AR 모
 - 정상 추적, 부분 추적, 추적 실패가 서로 구분된다.
 - Python이 pose v2 계약에 맞는 메시지를 게시한다.
 - Unity가 v2를 검증하고 메인 스레드에서 모의 포인터를 표시한다.
+- Unity가 LineRenderer pointer, Patient hover, dwell selection, interaction state와 HUD를 비의료 시뮬레이션으로 연결한다.
 - 연결 끊김, 데이터 만료, `PARTIAL`, `LOST`에서 포인터가 안전하게 비활성화된다.
 - 실제 의료 판단을 하지 않는다는 고지가 시작 화면과 프로젝트 문서에 존재한다.
 - gesture v1 fixture와 의미가 그대로 유지된다.

@@ -199,6 +199,7 @@ namespace TriageTrace.Presentation
             var receiverObject = new GameObject("Triage Trace Pose Receiver");
             Object.DontDestroyOnLoad(receiverObject);
             receiverObject.AddComponent<PosePointerLineRenderer>();
+            receiverObject.AddComponent<PointerRaycaster>();
             receiverObject.AddComponent<PoseReceiverBehaviour>();
         }
     }

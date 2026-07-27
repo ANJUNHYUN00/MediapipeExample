@@ -29,7 +29,9 @@ Triage Trace는 웹캠 기반 MediaPipe Pose Landmarker 입력으로 Unity AR �
 | `hand_gesture` v1 문서와 fixture | Task 02 완료 | 레거시 호환 계약으로 동결 |
 | Hand Landmarker 모델 | 설치·검증 완료 | 삭제하지 않지만 활성 Pose 경로에서는 사용하지 않음 |
 | 실제 Pose 추적과 오른팔 포인터 코드 | Task 07~08 완료 | Python 단독 활성 경로로 사용 |
-| WebSocket·Unity UI 코드 | 미구현 | Task 09 이후 Pose 기준으로 구현 |
+| pose v2 WebSocket·Unity DTO 수신 코드 | Task 09 완료 | Python pose v2 상태를 Unity 최신 상태 큐로 전달 |
+| Unity pointer line visualization | Task 10 완료 | `LineRenderer` 기반 모의 AR 포인터와 `CurrentDirection` 제공 |
+| Patient raycast hover highlighting | Task 11 완료 | `CurrentDirection` 기반 Patient collider hover highlight |
 
 상세 전환 결정은 [`transition-plan.md`](./transition-plan.md)에 기록한다.
 
@@ -138,9 +140,13 @@ v1과 v2의 정확한 필드, 불변 조건과 fixture는 [`websocket-protocols.
 - 포인터 사용 가능 여부
 - 정규화 포인터를 반영한 커서 또는 레이
 - 가상의 시나리오 카드나 표적
+- Patient hover, dwell selected, checked 같은 interaction state
+- 선택된 Patient의 비의료 상태 카드 HUD
 - 데이터 만료·추적 실패 안내
 
 Unity는 포인터로 선택할 수 있는 가상 시나리오를 표시할 수 있지만, 실제 환자 등급이나 치료 결론을 자동으로 생성하지 않는다. 샘플 라벨은 `Scenario A`, `Training Target 1`처럼 비임상 명칭을 우선한다.
+
+Interaction state 색상은 cyan/blue/white 계열을 사용한다. triage 색상 red/yellow/green/black은 가상 시나리오의 의료 중증도 라벨을 표시해야 할 때만 조심스럽게 사용하고, hover·selected·checked 같은 interaction state 색상과 섞지 않는다.
 
 ## 9. 오류와 안전한 비활성화
 
@@ -152,13 +158,20 @@ Unity는 포인터로 선택할 수 있는 가상 시나리오를 표시할 수 
 
 ## 10. 구현 단계
 
-1. Task 07: Pose Landmarker 모델과 VIDEO 모드 실행, 웹캠 프레임 처리
-2. Task 08: 오른쪽 세 관절 추출, tracking 품질, pointing과 pointer 계산
-3. Task 09: pose v2 메시지 빌더·WebSocket 게시와 Unity 수신 기반
-4. 후속 Task: Unity AR 모의 포인터, 안전 고지, 시나리오 UI
-5. 통합 Task: 추적 실패·재연결·데이터 만료·성능 검증
+1. Task 03: Python/Unity 환경 설정
+2. Task 03A: 문서 전환 및 Triage Trace 구조 정리
+3. Task 07: Pose Landmarker 모델과 VIDEO 모드 실행, 웹캠 프레임 처리
+4. Task 08: 오른쪽 세 관절 추출, tracking 품질, pointing과 pointer 계산
+5. Task 09: pose v2 메시지 빌더·WebSocket 게시와 Unity 수신 기반
+6. Task 10: Unity AR pointer visualization
+7. Task 11: Patient raycast hover highlighting
+8. Task 12: Dwell selection
+9. Task 13: Patient state machine
+10. Task 14: Patient status card UI
+11. Task 15: End-to-end scenario integration
+12. Task 16: Polish, QA, portfolio packaging
 
-실제 Pose 추적 코드는 이번 문서 전환 작업에서 구현하지 않는다.
+Task 10~16은 WebSocket `pose_pointer` v2 DTO 구조를 불필요하게 바꾸지 않고 Unity 시뮬레이션 상호작용과 완료 정리에 집중한다.
 
 ## 11. 검증 계획
 
@@ -169,6 +182,8 @@ Unity는 포인터로 선택할 수 있는 가상 시나리오를 표시할 수 
 - Python 환경 smoke test 유지
 - 구현 후 Pose 모델 초기화와 실제 카메라 수동 검증
 - 구현 후 Unity EditMode DTO 파싱과 PlayMode 포인터 비활성화 테스트
+- Task 11은 Unity license 문제로 PlayMode 테스트 실행이 미확인 상태이므로 후속 Task에서 재검증한다.
+- Task 12~16은 구현 시 Unity PlayMode 또는 수동 검증 체크리스트로 hover, dwell, state, HUD와 end-to-end 흐름을 확인한다.
 
 ## 12. 완료 기준
 
@@ -176,7 +191,9 @@ Unity는 포인터로 선택할 수 있는 가상 시나리오를 표시할 수 
 - 세 추적 상태와 포인터 유효성이 계약과 일치한다.
 - Python과 Unity가 v2 fixture를 동일하게 해석한다.
 - Unity 포인터는 추적 실패, 데이터 만료와 연결 끊김에서 즉시 안전하게 비활성화된다.
+- Unity가 Patient hover, dwell selection, interaction state와 HUD를 하나의 비의료 시나리오로 연결한다.
 - UI와 문서에 비의료 모의 인터페이스 고지가 명확하다.
+- README와 포트폴리오 설명이 AR hardware 없이 Unity simulation MVP임을 명확히 설명한다.
 - gesture v1 계약과 fixture가 그대로 유지된다.
 
 ## 13. 남은 위험
@@ -190,3 +207,5 @@ Unity는 포인터로 선택할 수 있는 가상 시나리오를 표시할 수 
 | Unity AR 좌표계와 이미지 좌표계 차이 | 명시적 y축 변환과 화면 투영 테스트 |
 | 의료 앱으로 오인될 가능성 | 상시 고지, 비임상 라벨, 실제 판단 로직 금지 |
 | v1/v2 라우팅 혼동 | type/version 조합을 엄격히 검증하고 DTO 분리 |
+| triage severity 색상과 interaction state 색상 혼동 | red/yellow/green/black은 severity label에만 제한하고 interaction은 cyan/blue/white 계열 사용 |
+| Unity license 문제로 PlayMode 테스트를 실행하지 못한 항목 | Task 12~16에서 재시도하고 불가능하면 수동 검증 결과와 미확인 위험 기록 |
