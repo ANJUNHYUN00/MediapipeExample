@@ -31,12 +31,12 @@ MVP 입력은 다음 세 Pose Landmarker 관절로 제한한다.
 | [`Tasks/10-unity-ar-pointer-visualization.md`](./Tasks/10-unity-ar-pointer-visualization.md) | 완료: Unity LineRenderer 기반 pose pointer 시각화 | 포인터 표시 변경 전 |
 | [`Tasks/11-patient-raycast-hover-highlighting.md`](./Tasks/11-patient-raycast-hover-highlighting.md) | 완료: Patient raycast hover highlight | Patient hover 변경 전 |
 | [`Tasks/12-dwell-selection.md`](./Tasks/12-dwell-selection.md) | 완료: dwell 기반 Patient 선택 | 선택 상호작용 변경 전 |
-| [`Tasks/13-patient-state-machine.md`](./Tasks/13-patient-state-machine.md) | 계획: Patient interaction state machine | Patient 상태 구현 전 |
+| [`Tasks/13-patient-state-machine.md`](./Tasks/13-patient-state-machine.md) | 완료: Patient interaction state machine | Patient 상태 변경 전 |
 | [`Tasks/14-patient-status-card-ui.md`](./Tasks/14-patient-status-card-ui.md) | 계획: 선택 Patient 상태 카드 UI | HUD 구현 전 |
 | [`Tasks/15-end-to-end-scenario-integration.md`](./Tasks/15-end-to-end-scenario-integration.md) | 계획: Pose부터 UI까지 통합 시나리오 | 통합 검증 전 |
 | [`Tasks/16-polish-qa-portfolio-packaging.md`](./Tasks/16-polish-qa-portfolio-packaging.md) | 계획: QA, README, 포트폴리오 정리 | 완료 정리 전 |
 
-기존 `Plan/01`~`06`, `Tasks/01`~`06`, `hand_gesture` fixture와 Hand Landmarker 자산은 삭제하지 않는다. 완료된 Task 01~03과 Task 07~12는 재사용 기반이며, 미완료 Hand/RPS Task 04~06은 레거시 참조로 보존한다. 다음 권장 구현은 Task 13 Patient state machine이다.
+기존 `Plan/01`~`06`, `Tasks/01`~`06`, `hand_gesture` fixture와 Hand Landmarker 자산은 삭제하지 않는다. 완료된 Task 01~03과 Task 07~13은 재사용 기반이며, 미완료 Hand/RPS Task 04~06은 레거시 참조로 보존한다. 다음 권장 구현은 Task 14 Patient status card UI다.
 
 ## 3. 핵심 아키텍처
 

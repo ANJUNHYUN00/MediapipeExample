@@ -8,10 +8,23 @@ namespace TriageTrace.Presentation
         private Renderer[] targetRenderers;
 
         [SerializeField]
-        private Color highlightColor = Color.yellow;
+        private PatientInteractionState interactionState =
+            PatientInteractionState.Unseen;
+
+        // Interaction colors must stay separate from triage severity colors
+        // such as red/yellow/green/black. These states track confirmation flow
+        // only; they are not medical classification.
+        [SerializeField]
+        private Color unseenColor = Color.white;
 
         [SerializeField]
-        private Color selectedColor = Color.cyan;
+        private Color highlightedColor = Color.cyan;
+
+        [SerializeField]
+        private Color inProgressColor = new Color(0.2f, 0.45f, 1.0f);
+
+        [SerializeField]
+        private Color checkedColor = Color.white;
 
         [SerializeField]
         private string primaryColorProperty = "_BaseColor";
@@ -21,43 +34,49 @@ namespace TriageTrace.Presentation
 
         private Color[] _originalColors;
         private bool[] _hasColorProperty;
-        private bool _highlighted;
-        private bool _selected;
 
-        public bool IsHighlighted => _highlighted;
-        public bool IsSelected => _selected;
+        public PatientInteractionState InteractionState => interactionState;
+        public bool IsHighlighted =>
+            interactionState == PatientInteractionState.Highlighted;
+        public bool IsSelected =>
+            interactionState == PatientInteractionState.InProgress;
+        public bool IsChecked =>
+            interactionState == PatientInteractionState.Checked;
 
         public void ConfigureForTests(
             Renderer[] renderers,
             Color color,
             string primaryProperty = "_BaseColor",
             string fallbackProperty = "_Color",
-            Color? selectionColor = null)
+            Color? selectionColor = null,
+            Color? baseStateColor = null,
+            Color? checkedStateColor = null)
         {
             targetRenderers = renderers;
-            highlightColor = color;
-            selectedColor = selectionColor ?? Color.cyan;
+            highlightedColor = color;
+            inProgressColor = selectionColor ?? Color.cyan;
+            unseenColor = baseStateColor ?? Color.white;
+            checkedColor = checkedStateColor ?? Color.blue;
             primaryColorProperty = primaryProperty;
             fallbackColorProperty = fallbackProperty;
             CacheOriginalColors();
+            ApplyVisualState();
         }
 
         public void HighlightOn()
         {
-            EnsureReferences();
-            EnsureColorCache();
-
-            _highlighted = true;
-            ApplyVisualState();
+            if (interactionState == PatientInteractionState.Unseen)
+            {
+                SetState(PatientInteractionState.Highlighted);
+            }
         }
 
         public void HighlightOff()
         {
-            EnsureReferences();
-            EnsureColorCache();
-
-            _highlighted = false;
-            ApplyVisualState();
+            if (interactionState == PatientInteractionState.Highlighted)
+            {
+                SetState(PatientInteractionState.Unseen);
+            }
         }
 
         public void SelectOn()
@@ -72,10 +91,35 @@ namespace TriageTrace.Presentation
 
         public void SetSelected(bool selected)
         {
+            SetState(
+                selected
+                    ? PatientInteractionState.InProgress
+                    : PatientInteractionState.Unseen);
+        }
+
+        public void MarkChecked()
+        {
+            SetState(PatientInteractionState.Checked, force: true);
+        }
+
+        public void SetState(PatientInteractionState state)
+        {
+            SetState(state, force: false);
+        }
+
+        private void SetState(PatientInteractionState state, bool force)
+        {
+            if (!force &&
+                interactionState == PatientInteractionState.Checked &&
+                state != PatientInteractionState.Checked)
+            {
+                return;
+            }
+
             EnsureReferences();
             EnsureColorCache();
 
-            _selected = selected;
+            interactionState = state;
             ApplyVisualState();
         }
 
@@ -86,35 +130,20 @@ namespace TriageTrace.Presentation
                 return;
             }
 
-            if (_selected)
+            switch (interactionState)
             {
-                ApplyColor(selectedColor);
-                return;
-            }
-
-            if (_highlighted)
-            {
-                ApplyColor(highlightColor);
-                return;
-            }
-
-            for (int i = 0; i < targetRenderers.Length; i++)
-            {
-                Renderer target = targetRenderers[i];
-                if (target == null ||
-                    !_hasColorProperty[i] ||
-                    target.material == null)
-                {
-                    continue;
-                }
-
-                string property = ResolveColorProperty(target.material);
-                if (string.IsNullOrEmpty(property))
-                {
-                    continue;
-                }
-
-                target.material.SetColor(property, _originalColors[i]);
+                case PatientInteractionState.Highlighted:
+                    ApplyColor(highlightedColor);
+                    return;
+                case PatientInteractionState.InProgress:
+                    ApplyColor(inProgressColor);
+                    return;
+                case PatientInteractionState.Checked:
+                    ApplyColor(checkedColor);
+                    return;
+                default:
+                    ApplyColor(unseenColor);
+                    return;
             }
         }
 
@@ -122,6 +151,7 @@ namespace TriageTrace.Presentation
         {
             EnsureReferences();
             CacheOriginalColors();
+            ApplyVisualState();
         }
 
         private void OnValidate()

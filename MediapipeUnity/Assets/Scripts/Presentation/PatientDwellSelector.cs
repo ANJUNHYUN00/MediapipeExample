@@ -90,12 +90,21 @@ namespace TriageTrace.Presentation
 
         private void Select(PatientView patient)
         {
-            if (patient == null || _selectedPatient == patient)
+            if (patient == null || patient.IsChecked)
             {
                 return;
             }
 
-            _selectedPatient?.SelectOff();
+            if (_selectedPatient == patient)
+            {
+                return;
+            }
+
+            if (_selectedPatient != null && !_selectedPatient.IsChecked)
+            {
+                _selectedPatient.SelectOff();
+            }
+
             _selectedPatient = patient;
             _selectedPatient.SelectOn();
         }

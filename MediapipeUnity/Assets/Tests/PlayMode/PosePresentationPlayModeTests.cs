@@ -209,6 +209,9 @@ namespace TriageTrace.Tests.PlayMode
 
             Assert.That(raycaster.CurrentPatient, Is.SameAs(firstPatient));
             Assert.That(firstPatient.IsHighlighted, Is.True);
+            Assert.That(
+                firstPatient.InteractionState,
+                Is.EqualTo(PatientInteractionState.Highlighted));
             Assert.That(secondPatient.IsHighlighted, Is.False);
 
             visualizer.Apply(CreatePointerState(0.95, 0.5), Time.realtimeSinceStartup);
@@ -218,7 +221,13 @@ namespace TriageTrace.Tests.PlayMode
 
             Assert.That(raycaster.CurrentPatient, Is.SameAs(secondPatient));
             Assert.That(firstPatient.IsHighlighted, Is.False);
+            Assert.That(
+                firstPatient.InteractionState,
+                Is.EqualTo(PatientInteractionState.Unseen));
             Assert.That(secondPatient.IsHighlighted, Is.True);
+            Assert.That(
+                secondPatient.InteractionState,
+                Is.EqualTo(PatientInteractionState.Highlighted));
 
             UnityEngine.Object.Destroy(pointerObject);
             UnityEngine.Object.Destroy(first);
@@ -269,6 +278,9 @@ namespace TriageTrace.Tests.PlayMode
 
             Assert.That(raycaster.CurrentPatient, Is.Null);
             Assert.That(patientView.IsHighlighted, Is.False);
+            Assert.That(
+                patientView.InteractionState,
+                Is.EqualTo(PatientInteractionState.Unseen));
 
             UnityEngine.Object.Destroy(pointerObject);
             UnityEngine.Object.Destroy(patient);
@@ -299,6 +311,9 @@ namespace TriageTrace.Tests.PlayMode
 
             Assert.That(selector.SelectedPatient, Is.SameAs(patientView));
             Assert.That(patientView.IsSelected, Is.True);
+            Assert.That(
+                patientView.InteractionState,
+                Is.EqualTo(PatientInteractionState.InProgress));
 
             UnityEngine.Object.Destroy(pointerObject);
             UnityEngine.Object.Destroy(patient);
@@ -345,7 +360,13 @@ namespace TriageTrace.Tests.PlayMode
 
             Assert.That(selector.SelectedPatient, Is.SameAs(secondPatient));
             Assert.That(firstPatient.IsSelected, Is.False);
+            Assert.That(
+                firstPatient.InteractionState,
+                Is.EqualTo(PatientInteractionState.Unseen));
             Assert.That(secondPatient.IsSelected, Is.True);
+            Assert.That(
+                secondPatient.InteractionState,
+                Is.EqualTo(PatientInteractionState.InProgress));
 
             UnityEngine.Object.Destroy(pointerObject);
             UnityEngine.Object.Destroy(first);
@@ -425,11 +446,84 @@ namespace TriageTrace.Tests.PlayMode
 
             Assert.That(selector.SelectedPatient, Is.SameAs(secondPatient));
             Assert.That(firstPatient.IsSelected, Is.False);
+            Assert.That(
+                firstPatient.InteractionState,
+                Is.EqualTo(PatientInteractionState.Unseen));
             Assert.That(secondPatient.IsSelected, Is.True);
+            Assert.That(
+                secondPatient.InteractionState,
+                Is.EqualTo(PatientInteractionState.InProgress));
 
             UnityEngine.Object.Destroy(pointerObject);
             UnityEngine.Object.Destroy(first);
             UnityEngine.Object.Destroy(second);
+        }
+
+        [UnityTest]
+        public IEnumerator PatientViewStartsUnseenAndCanBeMarkedChecked()
+        {
+            GameObject patient = CreatePatient(
+                "state default patient",
+                Vector3.forward,
+                layer: 3,
+                baseColor: Color.gray,
+                out PatientView patientView);
+
+            yield return null;
+
+            Assert.That(
+                patientView.InteractionState,
+                Is.EqualTo(PatientInteractionState.Unseen));
+
+            patientView.MarkChecked();
+
+            Assert.That(
+                patientView.InteractionState,
+                Is.EqualTo(PatientInteractionState.Checked));
+            Assert.That(patientView.IsChecked, Is.True);
+
+            UnityEngine.Object.Destroy(patient);
+        }
+
+        [UnityTest]
+        public IEnumerator CheckedPatientIgnoresHoverAndDwellStateChanges()
+        {
+            int patientLayer = 3;
+            GameObject pointerObject = CreatePointerRig(
+                "checked protected dwell selector",
+                patientLayer,
+                out PosePointerLineRenderer visualizer,
+                out PointerRaycaster raycaster);
+            var selector = pointerObject.AddComponent<PatientDwellSelector>();
+            selector.ConfigureForTests(raycaster, 0.1f);
+
+            GameObject patient = CreatePatient(
+                "checked protected patient",
+                new Vector3(0.0f, 0.0f, 4.0f),
+                patientLayer,
+                Color.gray,
+                out PatientView patientView);
+            patientView.MarkChecked();
+
+            visualizer.Apply(CreatePointerState(0.5, 0.5), Time.realtimeSinceStartup);
+            yield return new WaitForSeconds(0.15f);
+            yield return null;
+
+            Assert.That(raycaster.CurrentPatient, Is.SameAs(patientView));
+            Assert.That(
+                patientView.InteractionState,
+                Is.EqualTo(PatientInteractionState.Checked));
+            Assert.That(selector.SelectedPatient, Is.Null);
+
+            visualizer.SetConnected(false);
+            yield return null;
+
+            Assert.That(
+                patientView.InteractionState,
+                Is.EqualTo(PatientInteractionState.Checked));
+
+            UnityEngine.Object.Destroy(pointerObject);
+            UnityEngine.Object.Destroy(patient);
         }
 
         [Test]
@@ -531,9 +625,11 @@ namespace TriageTrace.Tests.PlayMode
             patientView = patient.AddComponent<PatientView>();
             patientView.ConfigureForTests(
                 new[] { renderer },
-                Color.yellow,
+                Color.cyan,
                 "_Color",
-                selectionColor: Color.cyan);
+                selectionColor: Color.blue,
+                baseStateColor: baseColor,
+                checkedStateColor: Color.white);
             return patient;
         }
 

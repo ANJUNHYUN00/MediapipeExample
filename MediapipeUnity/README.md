@@ -136,6 +136,20 @@ PosePointerMessageV2
 - 시작점이 비어 있으면 컴포넌트가 붙은 GameObject의 `Transform`을 사용한다.
 - `LineRenderer`가 비어 있으면 같은 GameObject에 자동으로 생성한다.
 
+### Patient interaction state
+
+`PatientView`는 `Unseen`, `Highlighted`, `InProgress`, `Checked` 상태를 가진다.
+이 상태는 가상 Patient의 확인 흐름을 추적하기 위한 interaction state이며 의료
+중증도 판단이 아니다. `PointerRaycaster`가 가리키는 `Unseen` 대상은
+`Highlighted`가 되고, `PatientDwellSelector`가 dwell 시간을 채우면
+`InProgress`가 된다. `MarkChecked()`는 외부 호출이나 후속 UI에서 확인 완료를
+표시하기 위한 최소 API다.
+
+interaction state 색상은 Inspector의 `Unseen Color`, `Highlighted Color`,
+`In Progress Color`, `Checked Color`에서 조정한다. red/yellow/green/black은
+triage severity 라벨을 표현해야 할 때만 별도 데이터로 다루며, hover, dwell,
+checked 같은 interaction state 색상과 섞지 않는다.
+
 ## 좌표 처리
 
 - v2 pointer는 이미지 기준 정규화 좌표다.

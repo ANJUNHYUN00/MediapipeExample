@@ -45,4 +45,23 @@
 
 ## Status
 
-계획.
+완료. `PatientInteractionState` enum과 `PatientView` 상태 전이를 추가했고, hover와 dwell selection을 `Highlighted`와 `InProgress` 상태로 연결했다.
+
+구현 결과:
+
+- `PatientInteractionState` enum을 `Presentation` 계층에 추가했다.
+- `PatientView`가 `Unseen`, `Highlighted`, `InProgress`, `Checked` 중 하나의 `InteractionState`를 가진다.
+- `PatientView.SetState(PatientInteractionState state)`와 `MarkChecked()`를 추가했다.
+- 기존 `HighlightOn()`, `HighlightOff()`, `SelectOn()`, `SelectOff()`, `SetSelected(bool)`는 유지하되 내부적으로 상태 전이에 연결했다.
+- `PointerRaycaster`의 기존 hover 호출은 `Unseen -> Highlighted`, `Highlighted -> Unseen` 전이로 동작한다.
+- `PatientDwellSelector`의 dwell 완료는 selected 표시 대신 `InProgress` 상태로 연결된다.
+- 새 Patient가 `InProgress`가 되면 이전 `InProgress` Patient는 `Checked`가 아닌 경우 `Unseen`으로 돌아간다.
+- `Checked` Patient는 hover와 dwell selection으로 `Unseen` 또는 `InProgress`로 되돌아가지 않는다.
+- 상태별 Inspector 색상 필드를 `Unseen Color`, `Highlighted Color`, `In Progress Color`, `Checked Color`로 분리했다.
+- red/yellow/green/black triage severity 색상과 interaction state 색상을 섞지 않는 원칙을 코드 주석과 Unity README에 기록했다.
+- WebSocket 수신 구조와 `PosePointerState` DTO는 변경하지 않았다.
+
+검증 결과:
+
+- PlayMode 테스트를 추가·갱신해 기본 `Unseen`, hover `Highlighted`, hover 해제 `Unseen`, dwell `InProgress`, 단일 `InProgress`, `MarkChecked()`, checked 보호 규칙을 검증하도록 했다.
+- Unity batchmode PlayMode 테스트는 라이선스 초기화 실패로 완료하지 못했다. 상세 로그는 `MediapipeUnity/Logs/task13-playmode.log` 또는 최신 Unity test log를 확인한다.
