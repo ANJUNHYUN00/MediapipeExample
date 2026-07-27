@@ -229,21 +229,23 @@ red/yellow/green/black은 triage severity와 혼동될 수 있으므로 interact
 - sequence 역행 메시지를 무시한다.
 - 데이터 만료와 연결 끊김을 별도 상태로 진단한다.
 
-## End-to-End 실행 순서
+## Final Run Order
 
-1. PowerShell에서 Python 가상환경을 활성화한다.
+1. Python 환경을 준비한다.
    `Set-Location C:\Projects\MediapipeExample\Mediapipe`
-2. MediaPipe Pose publisher를 실행한다.
+2. 처음 실행하는 환경이면 의존성을 설치한다.
+   `.\.venv\Scripts\python.exe -m pip install -e ".[dev]"`
+3. MediaPipe Pose publisher를 실행한다.
    `.\.venv\Scripts\python.exe -m mediapipe_rps.app`
-3. 카메라, Pose 모델, `ws://127.0.0.1:8765` 시작 로그를 확인한다.
-4. Unity Hub에서 `MediapipeUnity` 프로젝트를 연다.
-5. Scene의 receiver, pointer, raycaster, dwell selector, status card, Patient Layer 설정을 확인한다.
-6. Unity Play Mode를 실행한다.
-7. 오른팔을 카메라 안에서 펴고 pointing 상태에서 `LineRenderer` ray가 움직이는지 확인한다.
-8. ray가 Patient collider를 hit하면 `Highlighted`가 되는지 확인한다.
-9. 같은 Patient를 `Dwell Seconds` 이상 가리켜 `InProgress`와 status card 표시를 확인한다.
-10. Mark Checked 버튼을 눌러 `Checked` 상태가 유지되는지 확인한다.
-11. 종료 시 Unity Play Mode를 중지하고 Python 앱에서 `q`, `Esc` 또는 `Ctrl+C`로 서버와 카메라를 정리한다.
+4. 카메라, Pose 모델, `ws://127.0.0.1:8765` 시작 로그를 확인한다.
+5. Unity Hub에서 `C:\Projects\MediapipeExample\MediapipeUnity` 프로젝트를 연다.
+6. Unity Scene 설정 체크리스트를 확인한다.
+7. Unity Play Mode를 실행한다.
+8. 오른팔을 카메라 안에서 펴고 pointing 상태에서 pointer line을 확인한다.
+9. Patient 오브젝트를 가리켜 hover `Highlighted` 상태를 확인한다.
+10. 같은 Patient를 `Dwell Seconds` 이상 가리켜 `InProgress`와 Status Card 표시를 확인한다.
+11. Mark Checked 버튼을 눌러 `Checked` 상태가 유지되는지 확인한다.
+12. 종료 시 Unity Play Mode를 중지하고 Python 앱에서 `q`, `Esc` 또는 `Ctrl+C`로 서버와 카메라를 정리한다.
 
 씬에 별도 설정이 없어도 Play Mode에서 런타임 부트스트랩이
 `PoseReceiverBehaviour`와 `PosePointerLineRenderer`를 생성한다. 연결 URI 기본값은
@@ -255,6 +257,78 @@ red/yellow/green/black은 triage severity와 혼동될 수 있으므로 interact
 같은 GameObject의 `PosePointerLineRenderer`를 연결하고,
 `PosePointerLineRenderer`의 `Pointer Start`에는 ray를 시작할 Transform을 지정한다.
 
+## Setup Checklists
+
+### Unity Editor setup
+
+- Unity Editor 6000.3.10f1로 `MediapipeUnity`를 연다.
+- Main Camera 또는 AR Simulation Camera가 Scene에 있는지 확인한다.
+- `PointerOrigin` 빈 GameObject를 만들고 카메라 앞쪽을 향하게 한다.
+- Scenario object에 `PoseReceiverBehaviour`, `PosePointerLineRenderer`,
+  `PointerRaycaster`, `PatientDwellSelector`, `TriageTraceScenarioBootstrap`을 붙인다.
+- `PoseReceiverBehaviour.Pointer Line`에 `PosePointerLineRenderer`를 연결한다.
+- `PosePointerLineRenderer.Pointer Start`와 `PointerRaycaster.Ray Origin`에
+  `PointerOrigin`을 연결한다.
+- `PointerRaycaster.Patient Layer Mask`가 Patient 전용 Layer를 가리키는지 확인한다.
+
+### Patient object setup
+
+- 각 Patient는 가상 훈련 대상이며 실제 환자 데이터가 아니다.
+- 각 Patient GameObject에 `Collider`, `Renderer`, `PatientView`를 추가한다.
+- 모든 Patient에 같은 Patient Layer를 적용한다.
+- `PatientView.Display Name`에는 `Training Target 1`처럼 비임상 이름을 쓴다.
+- `Unseen`, `Highlighted`, `InProgress`, `Checked` 색상은 cyan/blue/white/gray 계열을 쓴다.
+- red/yellow/green/black은 triage severity 색상과 혼동될 수 있으므로 interaction state 색상으로 쓰지 않는다.
+
+### UI setup
+
+- Canvas 아래 `PatientStatusCard` panel을 만든다.
+- Patient ID Text, Interaction State Text, Checked Status Text, Mark Checked Button을 만든다.
+- Panel에 `PatientStatusCardUI`를 붙이고 Text/Button/Image 필드를 연결한다.
+- `PatientDwellSelector.Status Card` 또는 `TriageTraceScenarioBootstrap.Status Card`에
+  `PatientStatusCardUI`를 연결한다.
+- Status Card는 AR HUD 느낌의 반투명 카드로 유지하고, 정보는 Patient ID,
+  Interaction State, Checked 여부로 제한한다.
+- `Severity`, `Diagnosis`, `AI Judgement`, `Risk Score`처럼 의료 판단처럼 보이는 표현을 쓰지 않는다.
+
+## Demo Scenario
+
+1. Python publisher가 pose v2 메시지를 보낸다.
+2. Unity가 WebSocket으로 pose v2를 수신한다.
+3. 오른팔 pointing이 유효하면 얇은 cyan 계열 pointer line이 보인다.
+4. pointer line이 Patient collider를 향하면 해당 Patient가 `Highlighted`가 된다.
+5. 같은 Patient를 dwell 시간 이상 계속 가리키면 `InProgress`가 된다.
+6. Status Card가 Patient ID, Interaction State, Checked 여부를 표시한다.
+7. Mark Checked를 누르면 Patient가 `Checked`가 된다.
+8. `Checked` Patient는 다시 hover/dwell해도 `Unseen`이나 `InProgress`로 되돌아가지 않는다.
+
+이 시나리오는 누가 확인되었고 누가 아직 확인되지 않았는지 추적하는 보조 UI다.
+의료 중증도 판단, 자동 진단, 환자 우선순위 산출을 하지 않는다.
+
+## Design Polish Guide
+
+- Pointer line은 얇고 차분한 cyan 계열을 권장한다.
+- Patient interaction state 색상은 cyan/blue/white/gray 계열을 권장한다.
+- red/yellow/green/black은 triage severity 색상과 혼동될 수 있으므로 interaction state에는 쓰지 않는다.
+- Status Card는 AR HUD 느낌의 반투명 카드로 유지한다.
+- 정보는 Patient ID, Interaction State, Checked 여부 중심으로 최소화한다.
+- 의료 판단처럼 보이는 문구와 점수, 자동 분류 표현을 피한다.
+- 복잡한 최종 레이아웃, 발표 화면 polish, 포트폴리오용 캡처 정리는 별도 최종 다듬기에서 수행한다.
+
+## Manual QA Checklist
+
+- Unity Play Mode에서 pointer line이 보인다.
+- Patient 오브젝트를 가리키면 `Highlighted` 상태가 된다.
+- 같은 Patient를 `Dwell Seconds` 이상 가리키면 `InProgress` 상태가 된다.
+- Status Card가 해당 Patient 정보를 표시한다.
+- Mark Checked 실행 후 Patient가 `Checked` 상태가 된다.
+- `Checked` Patient는 hover/dwell로 되돌아가지 않는다.
+- `PARTIAL`, `LOST`, `pointing=false`, 연결 끊김, 데이터 만료에서 stale pointer나 hover가 남지 않는다.
+- UI 문구가 interaction tracking만 설명하고 의료 판단으로 읽히지 않는다.
+
+최소 데모 성공 기준은 pointer line, hover, dwell `InProgress`, Status Card, Mark Checked,
+`Checked` 보호 동작이 한 번의 Play Mode 세션에서 순서대로 확인되는 것이다.
+
 ## Known limitations
 
 - 실제 AR hardware 없이 Unity desktop simulation MVP로 동작한다.
@@ -262,7 +336,66 @@ red/yellow/green/black은 triage severity와 혼동될 수 있으므로 interact
 - Unity는 Python이 보낸 pose v2 pointer를 소비하며 Pose를 다시 추론하지 않는다.
 - 이 UI는 interaction tracking UI이며 의료 판단, 자동 진단, 중증도 판단 AI가 아니다.
 - Unity licensing 문제로 batchmode PlayMode 테스트 실행이 제한될 수 있다.
-- 최종 demo polish, 발표/포트폴리오 설명, limitation 정리는 Task 16 범위다.
+- 모바일 AR, AR Foundation, 실제 병원 시스템, 실제 환자 데이터 연동은 포함하지 않는다.
+- 디자인은 MVP 수준이며 발표용 최종 화면 구성은 상황에 맞춰 수동 조정할 수 있다.
+
+## Troubleshooting
+
+### Pointer line이 안 보일 때
+
+- Python publisher가 실행 중이고 Unity WebSocket 상태가 Connected인지 확인한다.
+- Pose 상태가 `TRACKING`이고 `pointing=true`인지 확인한다.
+- 오른쪽 어깨, 팔꿈치, 손목이 카메라 안에 충분히 보이는지 확인한다.
+- `PosePointerLineRenderer.Pointer Start`, `Line Length`, `Timeout Seconds`를 확인한다.
+- `PARTIAL`, `LOST`, 데이터 만료 상태에서는 line이 숨겨지는 것이 정상이다.
+
+### Patient가 highlight되지 않을 때
+
+- Patient GameObject에 Collider와 `PatientView`가 있는지 확인한다.
+- Patient Layer가 `PointerRaycaster.Patient Layer Mask`에 포함되는지 확인한다.
+- `PointerRaycaster.Ray Origin`과 pointer direction이 Patient collider를 향하는지 확인한다.
+- Collider가 너무 작거나 raycast distance 밖에 있지 않은지 확인한다.
+
+### dwell selection이 안 될 때
+
+- `PatientDwellSelector.Pointer Raycaster`가 연결되어 있는지 확인한다.
+- `Dwell Seconds`가 너무 길지 않은지 확인한다.
+- 같은 Patient를 dwell 시간 동안 계속 가리키고 있는지 확인한다.
+- pointer가 숨겨지거나 `CurrentPatient`가 null이면 dwell timer가 초기화된다.
+- 이미 `Checked` 상태인 Patient는 dwell로 `InProgress`로 되돌아가지 않는다.
+
+### Status Card가 안 뜰 때
+
+- `PatientStatusCardUI`의 Text/Button 필드가 연결되어 있는지 확인한다.
+- `PatientDwellSelector.Status Card` 또는 `TriageTraceScenarioBootstrap.Status Card`가 연결되어 있는지 확인한다.
+- Status Card가 null이면 `TriageTraceScenarioBootstrap.Create Status Card If Missing`을 켤 수 있다.
+- 표시할 Patient가 없으면 card가 숨김 상태가 되는 것이 정상이다.
+
+### Mark Checked가 안 될 때
+
+- Mark Checked Button이 `PatientStatusCardUI.MarkChecked()`에 연결되어 있는지 확인한다.
+- 현재 `PatientStatusCardUI.BoundPatient`가 null이 아닌지 확인한다.
+- 이미 `Checked` 상태이면 버튼이 비활성화되는 것이 정상이다.
+
+### Unity PlayMode test가 안 될 때
+
+- Unity Hub license 상태와 로그인 상태를 확인한다.
+- batchmode 로그의 `Licensing initialization failed` 여부를 기록한다.
+- 이 저장소에서는 Task 12~15 batchmode PlayMode 테스트가 licensing 문제로 결과 XML까지 진행하지 못한 이력이 있다.
+
+### Python publisher가 실행되지 않을 때
+
+- Python 3.11 가상환경이 만들어졌는지 확인한다.
+- `.\.venv\Scripts\python.exe -m pip install -e ".[dev]"`를 다시 실행한다.
+- `Mediapipe/models/pose_landmarker_lite.task`가 있는지 확인한다.
+- 카메라가 다른 앱에서 사용 중인지 확인한다.
+
+### WebSocket 연결이 안 될 때
+
+- Python 로그에서 `ws://127.0.0.1:8765`가 열렸는지 확인한다.
+- Unity `PoseReceiverBehaviour.websocketUri`가 같은 URI인지 확인한다.
+- 포트 8765를 다른 프로세스가 사용 중인지 확인한다.
+- Unity를 먼저 실행한 경우 재연결 로그를 확인하고 Python publisher를 다시 시작한다.
 
 ## 테스트
 
@@ -271,7 +404,9 @@ publisher까지 포함하는 조건부 PlayMode 테스트는 환경 변수
 `TRIAGE_TRACE_INTEGRATION_URI=ws://127.0.0.1:8765`를 설정하고 합성 또는 실제
 Python publisher를 먼저 실행한 뒤 수행한다.
 
-## 다음 작업
+## Portfolio Summary
 
-다음 Task 16에서 README, demo scenario, known limitations, 발표/포트폴리오 설명을
-최종 정리한다. 실제 의료 판단 기능은 추가하지 않는다.
+Triage Trace는 MediaPipe Pose의 오른팔 pointing을 Unity AR simulation 입력으로
+변환해, 가상 Patient 대상의 hover, dwell selection, checked 상태를 추적하는
+비의료 시뮬레이션 MVP다. 실제 의료 판단이나 자동 중증도 분류가 아니라,
+확인 흐름을 시각화하는 interaction prototype이다.

@@ -48,4 +48,23 @@ Triage Trace MVP를 시연·제출 가능한 형태로 정리한다. README, 실
 
 ## Status
 
-계획.
+완료. Unity simulation MVP를 발표와 포트폴리오에 사용할 수 있도록 README, 실행 순서, 씬 설정 체크리스트, demo scenario, known limitations, troubleshooting과 QA 기준을 정리했다.
+
+정리 결과:
+
+- README에 최종 실행 순서를 Python 환경 준비부터 Unity Play Mode 확인까지 초보자가 따라갈 수 있는 순서로 정리했다.
+- Unity Editor setup, Patient object setup, UI setup 체크리스트를 추가했다.
+- Patient에는 `Collider`, `Renderer`, `PatientView`, Patient Layer가 필요하다는 점을 명시했다.
+- Patient Status Card Canvas와 Mark Checked 연결 방법을 정리했다.
+- demo scenario를 pointer line, hover, dwell `InProgress`, status card, Mark Checked, `Checked` 보호 흐름으로 정리했다.
+- pointer line과 interaction state 색상은 cyan/blue/white/gray 계열을 권장하고, red/yellow/green/black은 interaction state 색상으로 쓰지 않는 원칙을 유지했다.
+- known limitations에 AR hardware 없음, PC webcam 기반 pose input, Unity simulation MVP, 의료 판단/자동 진단 아님, Unity license 테스트 제한을 기록했다.
+- troubleshooting에 pointer line, hover, dwell selection, status card, Mark Checked, Unity license, Python publisher, WebSocket 연결 문제 확인 항목을 추가했다.
+- Manual QA Checklist와 최소 데모 성공 기준을 추가했다.
+- Portfolio Summary를 추가해 프로젝트를 "MediaPipe Pose 기반 Unity AR simulation interaction prototype"으로 설명할 수 있게 했다.
+- WebSocket pose v2 DTO, 의료 판단 로직, AR hardware/mobile build는 변경하거나 추가하지 않았다.
+
+검증 결과:
+
+- Markdown 링크와 Task 16 필수 섹션을 검사했다.
+- Unity batchmode PlayMode 테스트는 현재 환경의 Unity licensing 초기화 실패로 완료하지 못했다. 최신 실패 로그는 `MediapipeUnity/Logs/task15-playmode.log`와 동일한 licensing failure 계열이다.
