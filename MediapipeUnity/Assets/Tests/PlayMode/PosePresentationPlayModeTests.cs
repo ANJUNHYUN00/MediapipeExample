@@ -5,6 +5,7 @@ using TriageTrace.Models;
 using TriageTrace.Networking;
 using TriageTrace.Presentation;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.TestTools;
 
 namespace TriageTrace.Tests.PlayMode
@@ -526,6 +527,129 @@ namespace TriageTrace.Tests.PlayMode
             UnityEngine.Object.Destroy(patient);
         }
 
+        [UnityTest]
+        public IEnumerator PatientStatusCardShowsBoundPatientDetails()
+        {
+            GameObject patient = CreatePatient(
+                "status card patient",
+                Vector3.forward,
+                layer: 3,
+                baseColor: Color.gray,
+                out PatientView patientView);
+            GameObject cardObject = CreateStatusCard(
+                out PatientStatusCardUI card,
+                out Text patientText,
+                out Text stateText,
+                out Text checkedText,
+                out Button button);
+
+            patientView.SelectOn();
+            card.Bind(patientView);
+            yield return null;
+
+            Assert.That(patientText.text, Does.Contain("status card patient"));
+            Assert.That(stateText.text, Does.Contain("InProgress"));
+            Assert.That(checkedText.text, Does.Contain("No"));
+            Assert.That(button.interactable, Is.True);
+
+            UnityEngine.Object.Destroy(cardObject);
+            UnityEngine.Object.Destroy(patient);
+        }
+
+        [UnityTest]
+        public IEnumerator PatientStatusCardMarkCheckedUpdatesPatientAndText()
+        {
+            GameObject patient = CreatePatient(
+                "checked card patient",
+                Vector3.forward,
+                layer: 3,
+                baseColor: Color.gray,
+                out PatientView patientView);
+            GameObject cardObject = CreateStatusCard(
+                out PatientStatusCardUI card,
+                out Text patientText,
+                out Text stateText,
+                out Text checkedText,
+                out Button button);
+
+            patientView.SelectOn();
+            card.Bind(patientView);
+            button.onClick.Invoke();
+            yield return null;
+
+            Assert.That(patientView.IsChecked, Is.True);
+            Assert.That(patientText.text, Does.Contain("checked card patient"));
+            Assert.That(stateText.text, Does.Contain("Checked"));
+            Assert.That(checkedText.text, Does.Contain("Yes"));
+            Assert.That(button.interactable, Is.False);
+
+            UnityEngine.Object.Destroy(cardObject);
+            UnityEngine.Object.Destroy(patient);
+        }
+
+        [UnityTest]
+        public IEnumerator PatientStatusCardHandlesNullPatient()
+        {
+            GameObject cardObject = CreateStatusCard(
+                out PatientStatusCardUI card,
+                out Text patientText,
+                out Text stateText,
+                out Text checkedText,
+                out Button button);
+
+            card.Bind(null);
+            card.MarkChecked();
+            yield return null;
+
+            Assert.That(card.BoundPatient, Is.Null);
+            Assert.That(patientText.text, Does.Contain("No patient selected"));
+            Assert.That(stateText.text, Does.Contain("None"));
+            Assert.That(checkedText.text, Does.Contain("No"));
+            Assert.That(button.interactable, Is.False);
+
+            UnityEngine.Object.Destroy(cardObject);
+        }
+
+        [UnityTest]
+        public IEnumerator DwellSelectorBindsStatusCardWhenPatientInProgress()
+        {
+            int patientLayer = 3;
+            GameObject pointerObject = CreatePointerRig(
+                "status card dwell selector",
+                patientLayer,
+                out PosePointerLineRenderer visualizer,
+                out PointerRaycaster raycaster);
+            GameObject cardObject = CreateStatusCard(
+                out PatientStatusCardUI card,
+                out Text patientText,
+                out Text stateText,
+                out Text checkedText,
+                out Button button);
+            var selector = pointerObject.AddComponent<PatientDwellSelector>();
+            selector.ConfigureForTests(raycaster, 0.1f, card);
+
+            GameObject patient = CreatePatient(
+                "dwell card patient",
+                new Vector3(0.0f, 0.0f, 4.0f),
+                patientLayer,
+                Color.gray,
+                out PatientView patientView);
+
+            visualizer.Apply(CreatePointerState(0.5, 0.5), Time.realtimeSinceStartup);
+            yield return new WaitForSeconds(0.15f);
+            yield return null;
+
+            Assert.That(card.BoundPatient, Is.SameAs(patientView));
+            Assert.That(patientText.text, Does.Contain("dwell card patient"));
+            Assert.That(stateText.text, Does.Contain("InProgress"));
+            Assert.That(checkedText.text, Does.Contain("No"));
+            Assert.That(button.interactable, Is.True);
+
+            UnityEngine.Object.Destroy(cardObject);
+            UnityEngine.Object.Destroy(pointerObject);
+            UnityEngine.Object.Destroy(patient);
+        }
+
         [Test]
         public void SafetyNoticeExplicitlyMarksSimulation()
         {
@@ -629,7 +753,8 @@ namespace TriageTrace.Tests.PlayMode
                 "_Color",
                 selectionColor: Color.blue,
                 baseStateColor: baseColor,
-                checkedStateColor: Color.white);
+                checkedStateColor: Color.white,
+                patientName: name);
             return patient;
         }
 
@@ -660,6 +785,51 @@ namespace TriageTrace.Tests.PlayMode
                 1 << patientLayer,
                 10.0f);
             return pointerObject;
+        }
+
+        private static GameObject CreateStatusCard(
+            out PatientStatusCardUI card,
+            out Text patientText,
+            out Text stateText,
+            out Text checkedText,
+            out Button button)
+        {
+            var canvasObject = new GameObject("status card canvas");
+            canvasObject.AddComponent<Canvas>();
+
+            var panelObject = new GameObject("PatientStatusCard");
+            panelObject.transform.SetParent(canvasObject.transform, false);
+            var panelImage = panelObject.AddComponent<Image>();
+
+            patientText = CreateText("Patient ID Text", panelObject.transform);
+            stateText = CreateText("Interaction State Text", panelObject.transform);
+            checkedText = CreateText("Checked Status Text", panelObject.transform);
+            button = CreateButton("Mark Checked Button", panelObject.transform);
+
+            card = panelObject.AddComponent<PatientStatusCardUI>();
+            card.ConfigureForTests(
+                panelObject,
+                patientText,
+                stateText,
+                checkedText,
+                button,
+                panelImage);
+            return canvasObject;
+        }
+
+        private static Text CreateText(string name, Transform parent)
+        {
+            var textObject = new GameObject(name);
+            textObject.transform.SetParent(parent, false);
+            return textObject.AddComponent<Text>();
+        }
+
+        private static Button CreateButton(string name, Transform parent)
+        {
+            var buttonObject = new GameObject(name);
+            buttonObject.transform.SetParent(parent, false);
+            buttonObject.AddComponent<Image>();
+            return buttonObject.AddComponent<Button>();
         }
     }
 }

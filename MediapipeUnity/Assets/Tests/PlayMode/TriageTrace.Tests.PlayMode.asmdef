@@ -2,7 +2,8 @@
   "name": "TriageTrace.Tests.PlayMode",
   "rootNamespace": "TriageTrace.Tests.PlayMode",
   "references": [
-    "TriageTrace.Runtime"
+    "TriageTrace.Runtime",
+    "UnityEngine.UI"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

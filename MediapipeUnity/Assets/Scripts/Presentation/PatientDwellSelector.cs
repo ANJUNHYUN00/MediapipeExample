@@ -11,6 +11,9 @@ namespace TriageTrace.Presentation
         [Min(0.05f)]
         private float dwellSeconds = 0.7f;
 
+        [SerializeField]
+        private PatientStatusCardUI statusCard;
+
         private PatientView _dwellPatient;
         private PatientView _selectedPatient;
         private float _dwellTimer;
@@ -23,10 +26,12 @@ namespace TriageTrace.Presentation
 
         public void ConfigureForTests(
             PointerRaycaster raycaster,
-            float seconds)
+            float seconds,
+            PatientStatusCardUI card = null)
         {
             pointerRaycaster = raycaster;
             dwellSeconds = Mathf.Max(0.05f, seconds);
+            statusCard = card;
         }
 
         private void Awake()
@@ -107,6 +112,7 @@ namespace TriageTrace.Presentation
 
             _selectedPatient = patient;
             _selectedPatient.SelectOn();
+            statusCard?.Bind(_selectedPatient);
         }
     }
 }

@@ -45,4 +45,21 @@
 
 ## Status
 
-계획.
+완료. `PatientStatusCardUI`를 Presentation 계층에 추가했고, dwell selection으로 `InProgress`가 된 Patient를 Canvas 기반 상태 카드에 바인딩할 수 있게 했다.
+
+구현 결과:
+
+- `PatientStatusCardUI`는 `PatientView`를 `Bind(PatientView)`로 표시하고 `Clear()`로 비운다.
+- 카드에는 Patient ID, Interaction State, Checked 여부를 표시한다.
+- `PatientView`에 `displayName` 필드와 `DisplayName` 속성을 추가했다.
+- `PatientView.StateChanged` 이벤트를 추가해 상태 변경 시 UI가 갱신될 수 있게 했다.
+- `PatientDwellSelector`에 선택적 `PatientStatusCardUI` 참조를 추가했고, 새 Patient가 `InProgress`가 되면 해당 카드를 바인딩한다.
+- `PatientStatusCardUI.MarkChecked()`와 Mark Checked 버튼 listener가 현재 Patient의 `MarkChecked()`를 호출한다.
+- null Patient는 예외 없이 empty 상태를 표시하고 버튼을 비활성화한다.
+- UI 색상은 cyan/blue/white/gray 계열을 기본으로 하며 red/yellow/green/black triage severity 색상을 interaction state UI에 사용하지 않는 원칙을 유지했다.
+- WebSocket 수신 구조와 `PosePointerState` DTO는 변경하지 않았다.
+
+검증 결과:
+
+- PlayMode 테스트를 추가해 Patient 바인딩, `InProgress` 표시, Mark Checked 버튼 동작, Checked UI 갱신, null 바인딩, dwell selection 후 카드 바인딩을 검증하도록 했다.
+- Unity batchmode PlayMode 테스트는 라이선스 초기화 실패로 완료하지 못했다. 상세 로그는 `MediapipeUnity/Logs/task14-playmode.log`를 확인한다.

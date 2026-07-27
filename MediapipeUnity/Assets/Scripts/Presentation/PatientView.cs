@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace TriageTrace.Presentation
@@ -6,6 +7,9 @@ namespace TriageTrace.Presentation
     {
         [SerializeField]
         private Renderer[] targetRenderers;
+
+        [SerializeField]
+        private string displayName;
 
         [SerializeField]
         private PatientInteractionState interactionState =
@@ -35,6 +39,10 @@ namespace TriageTrace.Presentation
         private Color[] _originalColors;
         private bool[] _hasColorProperty;
 
+        public event Action<PatientView> StateChanged;
+
+        public string DisplayName =>
+            string.IsNullOrWhiteSpace(displayName) ? name : displayName;
         public PatientInteractionState InteractionState => interactionState;
         public bool IsHighlighted =>
             interactionState == PatientInteractionState.Highlighted;
@@ -50,9 +58,11 @@ namespace TriageTrace.Presentation
             string fallbackProperty = "_Color",
             Color? selectionColor = null,
             Color? baseStateColor = null,
-            Color? checkedStateColor = null)
+            Color? checkedStateColor = null,
+            string patientName = null)
         {
             targetRenderers = renderers;
+            displayName = patientName ?? displayName;
             highlightedColor = color;
             inProgressColor = selectionColor ?? Color.cyan;
             unseenColor = baseStateColor ?? Color.white;
@@ -119,8 +129,15 @@ namespace TriageTrace.Presentation
             EnsureReferences();
             EnsureColorCache();
 
+            if (interactionState == state)
+            {
+                ApplyVisualState();
+                return;
+            }
+
             interactionState = state;
             ApplyVisualState();
+            StateChanged?.Invoke(this);
         }
 
         private void ApplyVisualState()

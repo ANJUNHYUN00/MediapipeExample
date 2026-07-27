@@ -17,6 +17,7 @@
 - JSON: `com.unity.nuget.newtonsoft-json` 3.2.2
 - pose v2 DTO·검증·재연결 수신기·최신 상태 큐 구현 완료
 - `LineRenderer` 기반 모의 AR 포인터 시각화 구현 완료
+- Patient interaction state와 Canvas 기반 Patient Status Card UI 구현 완료
 - `OnGUI` 연결/tracking/pointing 진단 표시 구현 완료
 - EditMode 10개, PlayMode 6개와 Python↔Unity 실소켓 PlayMode 4개 통과
 
@@ -149,6 +150,32 @@ interaction state 색상은 Inspector의 `Unseen Color`, `Highlighted Color`,
 `In Progress Color`, `Checked Color`에서 조정한다. red/yellow/green/black은
 triage severity 라벨을 표현해야 할 때만 별도 데이터로 다루며, hover, dwell,
 checked 같은 interaction state 색상과 섞지 않는다.
+
+### Patient Status Card UI
+
+`PatientStatusCardUI`는 선택되거나 `InProgress`가 된 가상 Patient의 확인 흐름을
+보여 주는 Canvas 기반 카드다. 의료 진단 카드가 아니며 진단, 위험도, 치료 추천,
+자동 중증도 판단을 표시하지 않는다.
+
+기본 구성:
+
+- Canvas
+- `PatientStatusCard` panel
+- Patient ID Text
+- Interaction State Text
+- Checked Status Text
+- Mark Checked Button
+
+씬에서 직접 설정하려면 Canvas 아래 panel을 만들고 `PatientStatusCardUI`를 붙인
+뒤 `Patient Id Text`, `Interaction State Text`, `Checked Status Text`,
+`Mark Checked Button`, 선택적 `Background Panel`을 연결한다.
+`PatientDwellSelector`의 `Status Card` 필드에 이 컴포넌트를 연결하면 dwell
+selection으로 `InProgress`가 된 Patient가 자동으로 카드에 표시된다.
+
+Mark Checked Button은 `PatientStatusCardUI.MarkChecked()`를 호출한다. 호출되면
+현재 표시 중인 `PatientView.MarkChecked()`가 실행되고 카드의 Interaction State와
+Checked 표시가 갱신된다. 표시할 Patient가 없으면 카드는 숨김 상태가 되며 버튼은
+비활성화된다.
 
 ## 좌표 처리
 
