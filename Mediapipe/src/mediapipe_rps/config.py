@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -74,6 +75,10 @@ class PointingConfig:
     smoothing_alpha: float = 0.35
     smoothing_max_frame_gap: int = 2
     activation_frames: int = 2
+    pointer_center_x: float = 0.5
+    pointer_center_y: float = 0.5
+    pointer_gain_x: float = 1.0
+    pointer_gain_y: float = 1.0
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.min_joint_visibility <= 1.0:
@@ -101,6 +106,14 @@ class PointingConfig:
             raise ValueError("smoothing_max_frame_gap must be greater than zero")
         if self.activation_frames <= 0:
             raise ValueError("activation_frames must be greater than zero")
+        for name in ("pointer_center_x", "pointer_center_y"):
+            value = getattr(self, name)
+            if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+                raise ValueError(f"{name} must be finite and between 0.0 and 1.0")
+        for name in ("pointer_gain_x", "pointer_gain_y"):
+            value = getattr(self, name)
+            if not math.isfinite(value) or value <= 0.0:
+                raise ValueError(f"{name} must be finite and greater than zero")
 
 
 @dataclass(frozen=True, slots=True)

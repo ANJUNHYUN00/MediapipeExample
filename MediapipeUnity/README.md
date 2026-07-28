@@ -179,6 +179,48 @@ Mark Checked Button은 `PatientStatusCardUI.MarkChecked()`를 호출한다. 호�
 Checked 표시가 갱신된다. 표시할 Patient가 없으면 카드는 숨김 상태가 되며 버튼은
 비활성화된다.
 
+### World Space Patient Status Card
+
+기본 데모 흐름은 `WorldSpacePatientStatusCard`를 사용해 현재 바라보는 Patient 또는
+dwell로 선택된 Patient 위에 같은 `PatientStatusCardUI` 정보를 표시한다. 선택된
+Patient가 hover Patient보다 우선하며, 둘 다 없으면 카드는 숨겨진다.
+
+`TriageTraceScenarioBootstrap`의 주요 Inspector 옵션:
+
+- `Enable Screen Space Status Card`: 기존 화면 고정 `StatusCardCanvas` 표시 여부.
+  기본값은 꺼짐이며 기존 오브젝트와 바인딩은 삭제하지 않는다.
+- `Create World Space Status Card If Missing`: World Space 카드가 없을 때 Play Mode에서
+  기본 카드를 생성한다.
+- `World Space Display Mode`: `Hover Or Selected`는 바라보기만 해도 표시하고,
+  `Selected Only`는 dwell 선택 이후에만 표시한다.
+- `World Space Card Offset`: Patient 또는 `Status Card Anchor` 기준 위치. 기본값
+  `(0, 1.3, 0)`. 위아래 위치는 Y로 조정하고, 앞뒤 거리인 Z는 기본 `0`을 유지한다.
+- `World Space Canvas Scale`: 기본 `0.003`.
+- `World Space Card Pixel Size`: 기본 `320 x 180`, 실제 크기는 약 `0.96 x 0.54m`.
+- `World Space Camera`: 비워 두면 `MainCamera` 태그 카메라를 사용한다.
+
+씬에서 직접 만들 때:
+
+1. `WorldSpacePatientStatusCard`라는 Canvas를 만들고 Render Mode를 `World Space`로
+   설정한다.
+2. Canvas 아래 panel과 Patient ID/Interaction/Checked Text, Mark Checked Button을
+   만든다.
+3. panel에 `PatientStatusCardUI`를 붙이고 `Card Root`, Text, Button,
+   `Background Panel`을 연결한다.
+4. Figma 배경을 넣을 때 `Background Panel` Image를 유지하고
+   `Background Sprite` 슬롯에 export한 Sprite를 연결한다.
+5. Canvas 루트에 `WorldSpacePatientStatusCard`를 붙이고 Status Card,
+   Pointer Raycaster, Dwell Selector, Target Camera, World Space Canvas를 연결한다.
+6. 카드 기준점을 세밀하게 조정하려면 Patient 자식으로 빈 Transform을 만들고
+   `PatientView.Status Card Anchor`에 연결한다. 환자별 원점 차이가 있으면 이
+   anchor로 개별 보정하고, 그렇지 않으면 Patient Transform과 `Patient Offset`을
+   사용한다.
+7. 기본 Y `1.3`에서 환자 모델 및 약 Y `0.9`의 `PatientMarker`와 겹치지 않는지
+   확인하고, 필요한 경우 Y만 미세 조정한다.
+
+카드는 LateUpdate에서 카메라 forward를 따라 회전한다. `Keep Upright`를 켜면
+카메라가 위아래로 기울어도 카드가 수직을 유지한다.
+
 ### End-to-End Scenario Setup
 
 `TriageTraceScenarioBootstrap`은 수동 Inspector 연결을 우선하고, 비어 있는 참조만
@@ -289,7 +331,29 @@ red/yellow/green/black은 triage severity와 혼동될 수 있으므로 interact
   `PatientStatusCardUI`를 연결한다.
 - Status Card는 AR HUD 느낌의 반투명 카드로 유지하고, 정보는 Patient ID,
   Interaction State, Checked 여부로 제한한다.
+- World Space Canvas의 `WorldSpacePatientStatusCard`에 Pointer Raycaster,
+  Dwell Selector, Main Camera를 연결한다.
+- 기존 화면 고정 카드는 `Enable Screen Space Status Card`로 선택적으로 유지한다.
+- 환자별 위치 보정이 필요하면 `PatientView.Status Card Anchor`를 연결하고, 공통
+  높이는 `World Space Card Offset`으로 조절한다.
+- Figma 배경 Sprite는 `PatientStatusCardUI.Background Sprite`에 연결한다.
 - `Severity`, `Diagnosis`, `AI Judgement`, `Risk Score`처럼 의료 판단처럼 보이는 표현을 쓰지 않는다.
+
+### 2026-07-28 통합 수동 검증
+
+실제 Python 카메라 입력과 Unity Play Mode 통합 실행에서 다음을 확인했다.
+
+- WebSocket 연결과 Unity 포인터 이동
+- 포인팅 오작동 없음
+- Patient raycast, hover, dwell 선택
+- 환자 interaction 색상 변경
+- Patient 위 World Space 카드 표시
+- Patient ID, Interaction State, Checked 상태 갱신
+
+카드 기본 offset은 `(0, 1.3, 0)`으로 씬의 Play Mode 외 직렬화 설정에 반영했다.
+씬의 `PatientMarker`는 약 Y `0.9`이고 World Space 카드 높이는 Y `1.3`이므로
+중심 간 약 `0.4m` 간격을 둔다. 실제 모델 원점이나 카드 크기가 다른 환자는
+`PatientView > Status Card Anchor`로 개별 보정한다.
 
 ## Demo Scenario
 
@@ -367,8 +431,13 @@ red/yellow/green/black은 triage severity와 혼동될 수 있으므로 interact
 ### Status Card가 안 뜰 때
 
 - `PatientStatusCardUI`의 Text/Button 필드가 연결되어 있는지 확인한다.
+- World Space 카드의 `Pointer Raycaster`, `Dwell Selector`, `Target Camera`가
+  연결되어 있는지 확인한다.
+- Main Camera가 `MainCamera` 태그를 가지는지 확인한다.
+- `World Space Display Mode`가 `Selected Only`이면 dwell 선택 전에는 숨김이 정상이다.
 - `PatientDwellSelector.Status Card` 또는 `TriageTraceScenarioBootstrap.Status Card`가 연결되어 있는지 확인한다.
 - Status Card가 null이면 `TriageTraceScenarioBootstrap.Create Status Card If Missing`을 켤 수 있다.
+- World Space 카드가 null이면 `Create World Space Status Card If Missing`을 켠다.
 - 표시할 Patient가 없으면 card가 숨김 상태가 되는 것이 정상이다.
 
 ### Mark Checked가 안 될 때

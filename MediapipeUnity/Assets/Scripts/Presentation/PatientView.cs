@@ -12,6 +12,10 @@ namespace TriageTrace.Presentation
         private string displayName;
 
         [SerializeField]
+        [Tooltip("Optional anchor for a World Space status card. Falls back to this PatientView transform.")]
+        private Transform statusCardAnchor;
+
+        [SerializeField]
         private PatientInteractionState interactionState =
             PatientInteractionState.Unseen;
 
@@ -43,6 +47,8 @@ namespace TriageTrace.Presentation
 
         public string DisplayName =>
             string.IsNullOrWhiteSpace(displayName) ? name : displayName;
+        public Transform StatusCardAnchor =>
+            statusCardAnchor == null ? transform : statusCardAnchor;
         public PatientInteractionState InteractionState => interactionState;
         public bool IsHighlighted =>
             interactionState == PatientInteractionState.Highlighted;

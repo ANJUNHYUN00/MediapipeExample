@@ -3,6 +3,12 @@ using UnityEngine.UI;
 
 namespace TriageTrace.Presentation
 {
+    public enum EmptyPatientCardDisplay
+    {
+        HideCard,
+        ShowWaitingState
+    }
+
     public sealed class PatientStatusCardUI : MonoBehaviour
     {
         [SerializeField]
@@ -22,6 +28,14 @@ namespace TriageTrace.Presentation
 
         [SerializeField]
         private Image backgroundPanel;
+
+        [SerializeField]
+        [Tooltip("Optional sprite slot for a future Figma-exported card background.")]
+        private Sprite backgroundSprite;
+
+        [SerializeField]
+        private EmptyPatientCardDisplay emptyPatientDisplay =
+            EmptyPatientCardDisplay.HideCard;
 
         // These are interaction tracking colors, not triage severity colors.
         // Do not use red/yellow/green/black here.
@@ -157,6 +171,10 @@ namespace TriageTrace.Presentation
             if (backgroundPanel != null)
             {
                 backgroundPanel.color = backgroundColor;
+                if (backgroundSprite != null)
+                {
+                    backgroundPanel.sprite = backgroundSprite;
+                }
             }
 
             ApplyTextStyle(patientIdText);
@@ -188,7 +206,10 @@ namespace TriageTrace.Presentation
             bool hasPatient = _boundPatient != null;
             if (cardRoot != null)
             {
-                cardRoot.SetActive(hasPatient);
+                cardRoot.SetActive(
+                    hasPatient ||
+                    emptyPatientDisplay ==
+                    EmptyPatientCardDisplay.ShowWaitingState);
             }
 
             if (!hasPatient)

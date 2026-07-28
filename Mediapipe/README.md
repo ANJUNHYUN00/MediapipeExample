@@ -197,15 +197,94 @@ Pose 진단만 필요하면 `--no-websocket`을 사용한다.
 
 주요 옵션은 `--width`, `--height`, `--model`,
 `--visibility-threshold`, `--min-elbow-angle`, `--pointer-extension`,
-`--smoothing-alpha`, `--activation-frames`, `--log-interval`,
-`--max-frames`, `--no-mirror`, `--websocket-host`,
+`--smoothing-alpha`, `--activation-frames`, `--pointer-center-x`,
+`--pointer-center-y`, `--pointer-gain-x`, `--pointer-gain-y`,
+`--log-interval`, `--max-frames`, `--no-mirror`, `--websocket-host`,
 `--websocket-port`, `--publish-hz`, `--no-websocket`이다. `q` 또는 `Esc`로
-종료하며 콘솔 전용 모드에서는 `Ctrl+C`로 종료한다. 유한 실행 smoke test는
+종료하며 미리보기에서 `C`로 현재 포인터를 중앙 기준점으로 지정한다. 콘솔 전용
+모드에서는 `Ctrl+C`로 종료한다. 유한 실행 smoke test는
 `--no-preview --max-frames 30`으로 수행할 수 있다.
 
 추론에는 원본 비미러 프레임을 사용하므로 12·14·16은 사람의 해부학적
 오른쪽을 뜻한다. 수평 미러링은 사용자 친화적인 디버그 미리보기에만 적용한다.
 카메라 프레임은 저장하거나 네트워크로 전송하지 않는다.
+
+## 포인터 좌표 캘리브레이션
+
+팔을 자연스럽게 움직였을 때 raw pointer가 화면 한쪽에 집중되는 카메라 구도와
+사용자 자세 차이를 보정하기 위한 단계다. 어깨·팔꿈치·손목 판정, visibility,
+팔꿈치 각도, smoothing과 activation frame은 기존 로직을 그대로 사용한다.
+유효 포인터가 활성화된 뒤에만 다음 식을 적용한다.
+
+```text
+calibrated_x = clamp(0.5 + (raw_x - center_x) * gain_x, 0.0, 1.0)
+calibrated_y = clamp(0.5 + (raw_y - center_y) * gain_y, 0.0, 1.0)
+```
+
+기본값은 center `(0.5, 0.5)`, gain `(1.0, 1.0)`이므로 이전 좌표와 동일하다.
+WebSocket `pose_pointer` v2에는 calibrated pointer만 들어가며 JSON 구조는 바뀌지
+않는다. `pointing=false`이면 보정 여부와 관계없이 `pointer=null`이다.
+
+미리보기에서 raw pointer는 주황색 `RAW` 마커, Unity로 전송되는 calibrated
+pointer는 자홍색 `CAL` 마커로 표시된다. 상단에는 center/gain, 포인팅 실패 이유,
+elbow angle과 오른쪽 어깨·팔꿈치·손목 visibility가 함께 표시된다.
+
+### C 키 세션 캘리브레이션
+
+1. Python 미리보기를 켠 상태에서 Unity 포인터도 확인한다.
+2. 팔을 힘주지 않은 편안한 중앙 포인팅 자세로 둔다.
+3. raw pointer가 유효하게 표시될 때 `C`를 누른다.
+4. 현재 raw `(x, y)`가 실행 중 center가 되고, 다음 프레임부터 그 자세가 Unity
+   `(0.5, 0.5)`에 대응한다.
+5. 유효 raw pointer가 없는 프레임에서는 C 입력을 무시하고 경고를 남긴다.
+
+C 키 값은 현재 프로세스에만 유지된다. 따라서 Python을 다시 실행할 때마다
+미리보기가 `TRACKING POINTING` 상태인 것을 확인한 뒤 `C`를 눌러 중앙을 다시
+보정한다. 고정 기준을 재사용하려면 로그와 미리보기의 center 값을
+`--pointer-center-x`, `--pointer-center-y`에 넣는다.
+
+### 추천 조정 순서
+
+1. 기본 gain `1.0/1.0`으로 실행하고 편안한 자세에서 `C`를 눌러 center를 맞춘다.
+2. 좌우 도달 범위가 좁으면 `--pointer-gain-x`를 조금씩 높인다.
+3. 상하 도달 범위가 좁으면 `--pointer-gain-y`를 조금씩 높인다.
+4. 모서리에서 너무 빨리 clamp되면 해당 gain을 낮춘다.
+5. center/gain을 먼저 조정하고 visibility나 elbow angle 기준은 좌표 범위 문제를
+   해결하기 위해 낮추지 않는다.
+
+최종 수동 검증에 사용한 실행 예시:
+
+```powershell
+Set-Location C:\Projects\MediapipeExample\Mediapipe
+
+.\.venv\Scripts\python.exe -m mediapipe_rps.app `
+  --min-elbow-angle 100 `
+  --activation-frames 3 `
+  --pointer-gain-x 2.0 `
+  --pointer-gain-y 1.8
+```
+
+Unity와 함께 시험할 때는 Python을 먼저 실행하고 Unity Play Mode에 진입한다.
+Python 미리보기가 `TRACKING POINTING`일 때 `C`를 눌러 중앙을 보정한다.
+미리보기의 `CAL` 마커와 Unity 포인터가 같은 방향으로 움직이는지 확인한 뒤,
+중앙 → 좌우 끝 → 상하 끝 순서로 도달 범위를 확인한다. Patient hover/dwell은
+좌표 보정 이후의 Unity 포인터로 검증하되 Unity 코드와 pose v2 필드는 변경하지
+않는다.
+
+### 2026-07-28 통합 수동 검증
+
+실제 카메라와 Unity Play Mode를 함께 사용해 다음을 확인했다.
+
+- MediaPipe Pose 추적과 WebSocket 연결
+- 최소 팔꿈치 각도 `100`, activation frames `3`, gain `x=2.0`, `y=1.8`
+- `C` 키 중앙 보정과 Unity 포인터 이동
+- 포인팅 오작동 없음
+- Patient raycast, hover, dwell 선택과 환자 색상 변경
+- Patient 위 World Space 카드 표시
+- Patient ID, Interaction State, Checked 상태 갱신
+
+이 값은 현재 카메라·사용자 자세에서 검증한 기준이다. 환경이 달라지면 먼저
+`C`로 center를 맞춘 뒤 gain을 조정한다.
 
 ## WebSocket 계약
 

@@ -58,6 +58,44 @@ def _elbow_angle_degrees(
     return math.degrees(math.acos(max(-1.0, min(1.0, cosine))))
 
 
+class PointerCalibration:
+    """Map an existing normalized pointer into the calibrated Unity range."""
+
+    def __init__(self, config: PointingConfig) -> None:
+        self._center_x = config.pointer_center_x
+        self._center_y = config.pointer_center_y
+        self._gain_x = config.pointer_gain_x
+        self._gain_y = config.pointer_gain_y
+
+    @property
+    def center_x(self) -> float:
+        return self._center_x
+
+    @property
+    def center_y(self) -> float:
+        return self._center_y
+
+    @property
+    def gain_x(self) -> float:
+        return self._gain_x
+
+    @property
+    def gain_y(self) -> float:
+        return self._gain_y
+
+    def calibrate(self, pointer: NormalizedPointer) -> NormalizedPointer:
+        calibrated_x = 0.5 + (pointer.x - self._center_x) * self._gain_x
+        calibrated_y = 0.5 + (pointer.y - self._center_y) * self._gain_y
+        return NormalizedPointer(
+            x=max(0.0, min(1.0, calibrated_x)),
+            y=max(0.0, min(1.0, calibrated_y)),
+        )
+
+    def set_center(self, pointer: NormalizedPointer) -> None:
+        self._center_x = pointer.x
+        self._center_y = pointer.y
+
+
 class PointingResolver:
     """Convert one valid right-arm pose into a raw pointer decision."""
 
@@ -283,6 +321,24 @@ class PointingPipeline:
         self._smoother = RightArmSmoother(config)
         self._resolver = PointingResolver(config)
         self._stabilizer = PointingStabilizer(config)
+        self._calibration = PointerCalibration(config)
+        self._raw_pointer: NormalizedPointer | None = None
+
+    @property
+    def raw_pointer(self) -> NormalizedPointer | None:
+        return self._raw_pointer
+
+    @property
+    def calibration(self) -> PointerCalibration:
+        return self._calibration
+
+    def calibrate_center_from_current_raw_pointer(self) -> bool:
+        """Use the latest geometrically valid raw pointer as session center."""
+
+        if self._raw_pointer is None:
+            return False
+        self._calibration.set_center(self._raw_pointer)
+        return True
 
     def update(
         self,
@@ -295,8 +351,16 @@ class PointingPipeline:
             smoothed_pose,
             image_aspect_ratio=image_aspect_ratio,
         )
-        return self._stabilizer.update(raw_state)
+        self._raw_pointer = raw_state.pointer
+        stabilized_state = self._stabilizer.update(raw_state)
+        if not stabilized_state.pointing or stabilized_state.pointer is None:
+            return stabilized_state
+        return replace(
+            stabilized_state,
+            pointer=self._calibration.calibrate(stabilized_state.pointer),
+        )
 
     def reset(self) -> None:
         self._smoother.reset()
         self._stabilizer.reset()
+        self._raw_pointer = None

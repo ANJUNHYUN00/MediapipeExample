@@ -67,16 +67,33 @@ def test_pointer_diagnostics_include_decision_and_render_marker() -> None:
     )
     source = np.zeros((240, 320, 3), dtype=np.uint8)
 
-    text = format_pointer_state(state)
+    raw_pointer = NormalizedPointer(0.7, 0.6)
+    text = format_pointer_state(
+        state,
+        raw_pointer=raw_pointer,
+        center_x=0.7,
+        center_y=0.6,
+        gain_x=2.0,
+        gain_y=1.5,
+    )
     rendered = render_pose_debug(
         source,
         pose,
         mirror_preview=False,
         fps=30.0,
         pointer_state=state,
+        raw_pointer=raw_pointer,
+        center_x=0.7,
+        center_y=0.6,
+        gain_x=2.0,
+        gain_y=1.5,
     )
 
     assert "pointing=true" in text
     assert "reason=POINTING" in text
     assert "angle=175.0" in text
+    assert "raw_pointer[x=0.700,y=0.600]" in text
+    assert "calibrated_pointer[x=0.800,y=0.400]" in text
+    assert "center[x=0.700,y=0.600]" in text
+    assert "gain[x=2.000,y=1.500]" in text
     assert np.any(rendered != source)

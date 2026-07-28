@@ -4,6 +4,7 @@ import pytest
 
 from mediapipe_rps.config import PointingConfig
 from mediapipe_rps.pointing import (
+    PointerCalibration,
     PointingPipeline,
     PointingResolver,
     PointingStabilizer,
@@ -11,6 +12,7 @@ from mediapipe_rps.pointing import (
 )
 from mediapipe_rps.pose_models import (
     Joint,
+    NormalizedPointer,
     PointingReason,
     PoseTrackingResult,
     TrackingState,
@@ -293,3 +295,93 @@ def test_pipeline_drops_stale_pointer_on_partial_and_reactivates() -> None:
     assert inactive.tracking is TrackingState.PARTIAL
     assert not restarted.pointing
     assert restarted.reason is PointingReason.ACTIVATING
+
+
+def test_calibration_center_maps_to_screen_center() -> None:
+    calibration = PointerCalibration(
+        PointingConfig(
+            pointer_center_x=0.82,
+            pointer_center_y=0.76,
+            pointer_gain_x=2.0,
+            pointer_gain_y=2.0,
+        )
+    )
+
+    pointer = calibration.calibrate(NormalizedPointer(0.82, 0.76))
+
+    assert pointer.x == pytest.approx(0.5)
+    assert pointer.y == pytest.approx(0.5)
+
+
+def test_calibration_gain_expands_motion_around_center() -> None:
+    calibration = PointerCalibration(
+        PointingConfig(pointer_gain_x=2.0, pointer_gain_y=3.0)
+    )
+
+    pointer = calibration.calibrate(NormalizedPointer(0.60, 0.40))
+
+    assert pointer.x == pytest.approx(0.70)
+    assert pointer.y == pytest.approx(0.20)
+
+
+def test_calibration_clamps_final_pointer() -> None:
+    calibration = PointerCalibration(
+        PointingConfig(pointer_gain_x=4.0, pointer_gain_y=4.0)
+    )
+
+    pointer = calibration.calibrate(NormalizedPointer(0.90, 0.10))
+
+    assert pointer.x == 1.0
+    assert pointer.y == 0.0
+
+
+def test_default_calibration_preserves_existing_pointer() -> None:
+    config = PointingConfig(activation_frames=1)
+    raw_state = PointingResolver(config).resolve(
+        tracking_pose(),
+        image_aspect_ratio=1.0,
+    )
+    calibrated_state = PointingPipeline(config).update(
+        tracking_pose(),
+        image_aspect_ratio=1.0,
+    )
+
+    assert raw_state.pointer is not None
+    assert calibrated_state.pointer is not None
+    assert calibrated_state.pointer.x == pytest.approx(raw_state.pointer.x)
+    assert calibrated_state.pointer.y == pytest.approx(raw_state.pointer.y)
+
+
+def test_calibration_keeps_pointer_null_when_pointing_is_false() -> None:
+    pipeline = PointingPipeline(
+        PointingConfig(
+            activation_frames=1,
+            pointer_center_x=0.8,
+            pointer_center_y=0.8,
+            pointer_gain_x=3.0,
+            pointer_gain_y=3.0,
+        )
+    )
+
+    state = pipeline.update(
+        tracking_pose(wrist=joint(0.5, 0.2)),
+        image_aspect_ratio=1.0,
+    )
+
+    assert not state.pointing
+    assert state.pointer is None
+    assert pipeline.raw_pointer is None
+
+
+def test_session_center_uses_current_raw_pointer() -> None:
+    pipeline = PointingPipeline(PointingConfig(activation_frames=1))
+    initial = pipeline.update(tracking_pose(0), image_aspect_ratio=1.0)
+
+    assert initial.pointer is not None
+    assert pipeline.calibrate_center_from_current_raw_pointer()
+
+    centered = pipeline.update(tracking_pose(1), image_aspect_ratio=1.0)
+
+    assert centered.pointer is not None
+    assert centered.pointer.x == pytest.approx(0.5)
+    assert centered.pointer.y == pytest.approx(0.5)

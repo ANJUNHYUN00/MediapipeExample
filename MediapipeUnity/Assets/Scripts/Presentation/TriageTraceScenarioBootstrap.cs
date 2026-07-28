@@ -21,6 +21,9 @@ namespace TriageTrace.Presentation
         private PatientStatusCardUI statusCard;
 
         [SerializeField]
+        private WorldSpacePatientStatusCard worldSpaceStatusCard;
+
+        [SerializeField]
         private Transform pointerOrigin;
 
         [SerializeField]
@@ -37,6 +40,29 @@ namespace TriageTrace.Presentation
         [SerializeField]
         private bool createStatusCardIfMissing = true;
 
+        [SerializeField]
+        private bool enableScreenSpaceStatusCard;
+
+        [SerializeField]
+        private bool createWorldSpaceStatusCardIfMissing = true;
+
+        [SerializeField]
+        private WorldSpaceCardDisplayMode worldSpaceDisplayMode =
+            WorldSpaceCardDisplayMode.HoverOrSelected;
+
+        [SerializeField]
+        private Vector3 worldSpaceCardOffset = new Vector3(0.0f, 1.3f, 0.0f);
+
+        [SerializeField]
+        [Min(0.0001f)]
+        private float worldSpaceCanvasScale = 0.003f;
+
+        [SerializeField]
+        private Vector2 worldSpaceCardPixelSize = new Vector2(320.0f, 180.0f);
+
+        [SerializeField]
+        private Camera worldSpaceCamera;
+
         private void Awake()
         {
             ResolveReferences();
@@ -47,6 +73,9 @@ namespace TriageTrace.Presentation
         {
             raycastDistance = Mathf.Max(0.01f, raycastDistance);
             dwellSeconds = Mathf.Max(0.05f, dwellSeconds);
+            worldSpaceCanvasScale = Mathf.Max(0.0001f, worldSpaceCanvasScale);
+            worldSpaceCardPixelSize.x = Mathf.Max(1.0f, worldSpaceCardPixelSize.x);
+            worldSpaceCardPixelSize.y = Mathf.Max(1.0f, worldSpaceCardPixelSize.y);
         }
 
         public void ResolveReferences()
@@ -76,6 +105,11 @@ namespace TriageTrace.Presentation
                 statusCard = FindFirstObjectByType<PatientStatusCardUI>();
             }
 
+            if (worldSpaceStatusCard == null)
+            {
+                worldSpaceStatusCard = FindFirstObjectByType<WorldSpacePatientStatusCard>();
+            }
+
             if (pointerOrigin == null)
             {
                 pointerOrigin = transform;
@@ -85,6 +119,18 @@ namespace TriageTrace.Presentation
             {
                 statusCard = CreateStatusCard();
             }
+
+            if (worldSpaceStatusCard == null &&
+                createWorldSpaceStatusCardIfMissing)
+            {
+                worldSpaceStatusCard = CreateWorldSpaceStatusCard();
+            }
+
+            if (worldSpaceCamera == null)
+            {
+                worldSpaceCamera = Camera.main;
+            }
+            SetScreenSpaceCardEnabled(enableScreenSpaceStatusCard);
         }
 
         public void ConnectComponents()
@@ -106,6 +152,103 @@ namespace TriageTrace.Presentation
                 pointerRaycaster,
                 dwellSeconds,
                 statusCard);
+
+            if (worldSpaceStatusCard != null)
+            {
+                RectTransform worldRect =
+                    worldSpaceStatusCard.GetComponent<RectTransform>();
+                if (worldRect != null)
+                {
+                    worldRect.sizeDelta = worldSpaceCardPixelSize;
+                }
+                worldSpaceStatusCard.transform.localScale =
+                    Vector3.one * worldSpaceCanvasScale;
+                worldSpaceStatusCard.Configure(
+                    worldSpaceStatusCard.StatusCard,
+                    pointerRaycaster,
+                    dwellSelector,
+                    worldSpaceCamera,
+                    worldSpaceDisplayMode,
+                    worldSpaceCardOffset);
+            }
+        }
+
+        private void SetScreenSpaceCardEnabled(bool enabled)
+        {
+            if (statusCard == null)
+            {
+                return;
+            }
+
+            Canvas canvas = statusCard.GetComponentInParent<Canvas>(true);
+            if (canvas != null && canvas.renderMode != RenderMode.WorldSpace)
+            {
+                canvas.enabled = enabled;
+            }
+        }
+
+        private WorldSpacePatientStatusCard CreateWorldSpaceStatusCard()
+        {
+            var canvasObject = new GameObject(
+                "WorldSpacePatientStatusCard",
+                typeof(RectTransform));
+            var rect = canvasObject.GetComponent<RectTransform>();
+            rect.sizeDelta = worldSpaceCardPixelSize;
+            rect.localScale = Vector3.one * worldSpaceCanvasScale;
+
+            var canvas = canvasObject.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvas.worldCamera = worldSpaceCamera == null
+                ? Camera.main
+                : worldSpaceCamera;
+            canvas.sortingOrder = 10;
+            canvasObject.AddComponent<CanvasScaler>();
+            canvasObject.AddComponent<GraphicRaycaster>();
+
+            var panelObject = new GameObject(
+                "PatientStatusCard",
+                typeof(RectTransform));
+            panelObject.transform.SetParent(canvasObject.transform, false);
+            var panelRect = panelObject.GetComponent<RectTransform>();
+            panelRect.anchorMin = Vector2.zero;
+            panelRect.anchorMax = Vector2.one;
+            panelRect.offsetMin = Vector2.zero;
+            panelRect.offsetMax = Vector2.zero;
+            var panelImage = panelObject.AddComponent<Image>();
+
+            Text patientText = CreateText(
+                "Patient ID Text",
+                panelObject.transform,
+                new Vector2(12.0f, -14.0f));
+            Text stateText = CreateText(
+                "Interaction State Text",
+                panelObject.transform,
+                new Vector2(12.0f, -48.0f));
+            Text checkedText = CreateText(
+                "Checked Status Text",
+                panelObject.transform,
+                new Vector2(12.0f, -82.0f));
+            Button button = CreateButton(panelObject.transform);
+
+            var card = panelObject.AddComponent<PatientStatusCardUI>();
+            card.ConfigureForTests(
+                panelObject,
+                patientText,
+                stateText,
+                checkedText,
+                button,
+                panelImage);
+
+            var worldCard =
+                canvasObject.AddComponent<WorldSpacePatientStatusCard>();
+            worldCard.Configure(
+                card,
+                pointerRaycaster,
+                dwellSelector,
+                canvas.worldCamera,
+                worldSpaceDisplayMode,
+                worldSpaceCardOffset);
+            return worldCard;
         }
 
         private PatientStatusCardUI CreateStatusCard()

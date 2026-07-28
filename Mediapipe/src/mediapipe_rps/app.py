@@ -43,6 +43,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--pointer-extension", type=float, default=0.25)
     parser.add_argument("--smoothing-alpha", type=float, default=0.35)
     parser.add_argument("--activation-frames", type=int, default=2)
+    parser.add_argument("--pointer-center-x", type=float, default=0.5)
+    parser.add_argument("--pointer-center-y", type=float, default=0.5)
+    parser.add_argument("--pointer-gain-x", type=float, default=1.0)
+    parser.add_argument("--pointer-gain-y", type=float, default=1.0)
     parser.add_argument("--websocket-host", default="127.0.0.1")
     parser.add_argument("--websocket-port", type=int, default=8765)
     parser.add_argument("--publish-hz", type=float, default=15.0)
@@ -111,7 +115,9 @@ def run(
             Camera(camera_config) as camera,
             PoseTracker(pose_config) as tracker,
         ):
-            LOGGER.info("Pose tracking started. Press q or Esc to quit.")
+            LOGGER.info(
+                "Pose tracking started. Press C to center; q or Esc to quit."
+            )
             while True:
                 frame = camera.read()
                 result = tracker.process(frame)
@@ -137,7 +143,18 @@ def run(
                     pointer_state.reason,
                 )
                 if current_state != previous_state or now >= next_console_log_time:
-                    LOGGER.info("%s", format_pointer_state(pointer_state))
+                    calibration = pointing_pipeline.calibration
+                    LOGGER.info(
+                        "%s",
+                        format_pointer_state(
+                            pointer_state,
+                            raw_pointer=pointing_pipeline.raw_pointer,
+                            center_x=calibration.center_x,
+                            center_y=calibration.center_y,
+                            gain_x=calibration.gain_x,
+                            gain_y=calibration.gain_y,
+                        ),
+                    )
                     previous_state = current_state
                     next_console_log_time = (
                         now + debug_config.console_log_interval_seconds
@@ -150,10 +167,29 @@ def run(
                         mirror_preview=camera_config.mirror_preview,
                         fps=fps,
                         pointer_state=pointer_state,
+                        raw_pointer=pointing_pipeline.raw_pointer,
+                        center_x=pointing_pipeline.calibration.center_x,
+                        center_y=pointing_pipeline.calibration.center_y,
+                        gain_x=pointing_pipeline.calibration.gain_x,
+                        gain_y=pointing_pipeline.calibration.gain_y,
                     )
                     cv2.imshow(camera_config.window_name, preview)
-                    if cv2.waitKey(1) & 0xFF in (ord("q"), 27):
+                    key = cv2.waitKey(1) & 0xFF
+                    if key in (ord("q"), 27):
                         break
+                    if key in (ord("c"), ord("C")):
+                        if pointing_pipeline.calibrate_center_from_current_raw_pointer():
+                            calibration = pointing_pipeline.calibration
+                            LOGGER.info(
+                                "Session pointer center set to x=%.3f y=%.3f",
+                                calibration.center_x,
+                                calibration.center_y,
+                            )
+                        else:
+                            LOGGER.warning(
+                                "Center calibration ignored: "
+                                "no valid raw pointer in the current frame"
+                            )
                 if (
                     debug_config.max_frames is not None
                     and processed_frames >= debug_config.max_frames
@@ -205,6 +241,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             pointer_extension_factor=args.pointer_extension,
             smoothing_alpha=args.smoothing_alpha,
             activation_frames=args.activation_frames,
+            pointer_center_x=args.pointer_center_x,
+            pointer_center_y=args.pointer_center_y,
+            pointer_gain_x=args.pointer_gain_x,
+            pointer_gain_y=args.pointer_gain_y,
         )
         websocket_config = WebSocketConfig(
             enabled=not args.no_websocket,

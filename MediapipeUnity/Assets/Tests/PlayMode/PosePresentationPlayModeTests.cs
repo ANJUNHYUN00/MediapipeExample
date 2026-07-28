@@ -651,6 +651,83 @@ namespace TriageTrace.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator WorldSpaceStatusCardFollowsHoverAndPersistsAfterSelection()
+        {
+            int patientLayer = 3;
+            GameObject pointerObject = CreatePointerRig(
+                "world status card pointer",
+                patientLayer,
+                out PosePointerLineRenderer visualizer,
+                out PointerRaycaster raycaster);
+            var selector = pointerObject.AddComponent<PatientDwellSelector>();
+            selector.ConfigureForTests(raycaster, 0.1f);
+
+            GameObject cardObject = CreateStatusCard(
+                out PatientStatusCardUI card,
+                out Text patientText,
+                out Text stateText,
+                out Text checkedText,
+                out Button button);
+            Canvas canvas = cardObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            cardObject.transform.localScale = Vector3.one * 0.003f;
+
+            var cameraObject = new GameObject("world status card camera");
+            cameraObject.tag = "MainCamera";
+            Camera targetCamera = cameraObject.AddComponent<Camera>();
+            targetCamera.transform.SetPositionAndRotation(
+                Vector3.zero,
+                Quaternion.identity);
+
+            var worldCard =
+                cardObject.AddComponent<WorldSpacePatientStatusCard>();
+            Vector3 offset = new Vector3(0.0f, 1.3f, 0.0f);
+            worldCard.Configure(
+                card,
+                raycaster,
+                selector,
+                targetCamera,
+                WorldSpaceCardDisplayMode.HoverOrSelected,
+                offset);
+
+            GameObject patient = CreatePatient(
+                "world card patient",
+                new Vector3(0.0f, 0.0f, 4.0f),
+                patientLayer,
+                Color.gray,
+                out PatientView patientView);
+
+            visualizer.Apply(CreatePointerState(0.5, 0.5), Time.realtimeSinceStartup);
+            yield return null;
+            yield return null;
+
+            Assert.That(worldCard.VisiblePatient, Is.SameAs(patientView));
+            Assert.That(card.BoundPatient, Is.SameAs(patientView));
+            Assert.That(
+                Vector3.Distance(
+                    cardObject.transform.position,
+                    patient.transform.position + offset),
+                Is.LessThan(0.001f));
+            Assert.That(
+                Vector3.Dot(cardObject.transform.forward, targetCamera.transform.forward),
+                Is.GreaterThan(0.999f));
+
+            yield return new WaitForSeconds(0.12f);
+            visualizer.SetConnected(false);
+            yield return null;
+            yield return null;
+
+            Assert.That(selector.SelectedPatient, Is.SameAs(patientView));
+            Assert.That(worldCard.VisiblePatient, Is.SameAs(patientView));
+            Assert.That(stateText.text, Does.Contain("InProgress"));
+
+            UnityEngine.Object.Destroy(cardObject);
+            UnityEngine.Object.Destroy(cameraObject);
+            UnityEngine.Object.Destroy(pointerObject);
+            UnityEngine.Object.Destroy(patient);
+        }
+
+        [UnityTest]
         public IEnumerator ScenarioBootstrapConnectsEndToEndPresentationFlow()
         {
             int patientLayer = 3;

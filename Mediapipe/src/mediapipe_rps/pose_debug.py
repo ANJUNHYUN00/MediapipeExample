@@ -8,6 +8,7 @@ from numpy.typing import NDArray
 
 from .pose_models import (
     Joint,
+    NormalizedPointer,
     PosePointerState,
     PoseTrackingResult,
     TrackingState,
@@ -39,7 +40,15 @@ def format_pose_result(result: PoseTrackingResult) -> str:
     )
 
 
-def format_pointer_state(state: PosePointerState) -> str:
+def format_pointer_state(
+    state: PosePointerState,
+    *,
+    raw_pointer: NormalizedPointer | None = None,
+    center_x: float = 0.5,
+    center_y: float = 0.5,
+    gain_x: float = 1.0,
+    gain_y: float = 1.0,
+) -> str:
     """Return Pose coordinates together with the pointing decision."""
 
     angle = (
@@ -47,7 +56,12 @@ def format_pointer_state(state: PosePointerState) -> str:
         if state.elbow_angle_degrees is None
         else f"{state.elbow_angle_degrees:.1f}"
     )
-    pointer = (
+    raw = (
+        "null"
+        if raw_pointer is None
+        else f"x={raw_pointer.x:.3f},y={raw_pointer.y:.3f}"
+    )
+    calibrated = (
         "null"
         if state.pointer is None
         else f"x={state.pointer.x:.3f},y={state.pointer.y:.3f}"
@@ -55,7 +69,10 @@ def format_pointer_state(state: PosePointerState) -> str:
     return (
         f"{format_pose_result(state.pose)} "
         f"pointing={str(state.pointing).lower()} "
-        f"reason={state.reason.value} angle={angle} pointer[{pointer}]"
+        f"reason={state.reason.value} angle={angle} "
+        f"raw_pointer[{raw}] calibrated_pointer[{calibrated}] "
+        f"center[x={center_x:.3f},y={center_y:.3f}] "
+        f"gain[x={gain_x:.3f},y={gain_y:.3f}]"
     )
 
 
@@ -66,6 +83,11 @@ def render_pose_debug(
     mirror_preview: bool,
     fps: float,
     pointer_state: PosePointerState | None = None,
+    raw_pointer: NormalizedPointer | None = None,
+    center_x: float = 0.5,
+    center_y: float = 0.5,
+    gain_x: float = 1.0,
+    gain_y: float = 1.0,
 ) -> NDArray[np.uint8]:
     """Draw the right-arm joints and current state on a preview frame."""
 
@@ -115,28 +137,61 @@ def render_pose_debug(
             cv2.LINE_AA,
         )
 
-    if pointer_state is not None and pointer_state.pointer is not None:
-        pointer_x = (
-            1.0 - pointer_state.pointer.x
-            if mirror_preview
-            else pointer_state.pointer.x
+    cv2.rectangle(canvas, (0, 0), (width, 118), (20, 20, 20), -1)
+
+    def pointer_pixel(pointer: NormalizedPointer) -> tuple[int, int]:
+        normalized_x = 1.0 - pointer.x if mirror_preview else pointer.x
+        return (
+            int(round(normalized_x * (width - 1))),
+            int(round(pointer.y * (height - 1))),
         )
-        pointer_point = (
-            int(round(pointer_x * (width - 1))),
-            int(round(pointer_state.pointer.y * (height - 1))),
-        )
+
+    if raw_pointer is not None:
+        raw_point = pointer_pixel(raw_pointer)
         cv2.drawMarker(
             canvas,
-            pointer_point,
+            raw_point,
+            (0, 165, 255),
+            cv2.MARKER_TILTED_CROSS,
+            22,
+            2,
+            cv2.LINE_AA,
+        )
+        cv2.putText(
+            canvas,
+            "RAW",
+            (raw_point[0] + 8, max(20, raw_point[1] - 8)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.45,
+            (0, 165, 255),
+            1,
+            cv2.LINE_AA,
+        )
+
+    if pointer_state is not None and pointer_state.pointer is not None:
+        calibrated_point = pointer_pixel(pointer_state.pointer)
+        cv2.drawMarker(
+            canvas,
+            calibrated_point,
             (255, 80, 255),
             cv2.MARKER_CROSS,
             24,
             3,
             cv2.LINE_AA,
         )
+        cv2.putText(
+            canvas,
+            "CAL",
+            (calibrated_point[0] + 8, max(20, calibrated_point[1] - 8)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.45,
+            (255, 80, 255),
+            1,
+            cv2.LINE_AA,
+        )
 
     pointing_label = ""
-    detail_label = f"frame {result.frame_index}  q/esc: quit"
+    reason_label = f"frame {result.frame_index}"
     if pointer_state is not None:
         pointing_label = "  POINTING" if pointer_state.pointing else "  NOT POINTING"
         angle = (
@@ -144,28 +199,70 @@ def render_pose_debug(
             if pointer_state.elbow_angle_degrees is None
             else f"{pointer_state.elbow_angle_degrees:.1f} deg"
         )
-        detail_label = (
-            f"{pointer_state.reason.value}  elbow {angle}  "
-            f"frame {result.frame_index}"
+        visibility = "/".join(
+            "-"
+            if joint is None
+            else f"{joint.visibility:.2f}"
+            for joint in (
+                result.right_shoulder,
+                result.right_elbow,
+                result.right_wrist,
+            )
+        )
+        reason_label = (
+            f"Reason: {pointer_state.reason.value}  elbow: {angle}  "
+            f"visibility S/E/W: {visibility}"
         )
 
-    cv2.rectangle(canvas, (0, 0), (width, 72), (20, 20, 20), -1)
+    raw_label = (
+        "null"
+        if raw_pointer is None
+        else f"({raw_pointer.x:.3f}, {raw_pointer.y:.3f})"
+    )
+    calibrated_pointer = None if pointer_state is None else pointer_state.pointer
+    calibrated_label = (
+        "null"
+        if calibrated_pointer is None
+        else f"({calibrated_pointer.x:.3f}, {calibrated_pointer.y:.3f})"
+    )
+
     cv2.putText(
         canvas,
         f"{result.tracking.value}{pointing_label}  FPS {fps:.1f}",
-        (12, 28),
+        (12, 24),
         cv2.FONT_HERSHEY_SIMPLEX,
-        0.7,
+        0.62,
         color,
         2,
         cv2.LINE_AA,
     )
     cv2.putText(
         canvas,
-        detail_label,
-        (12, 56),
+        reason_label,
+        (12, 48),
         cv2.FONT_HERSHEY_SIMPLEX,
-        0.5,
+        0.43,
+        (230, 230, 230),
+        1,
+        cv2.LINE_AA,
+    )
+    cv2.putText(
+        canvas,
+        f"Raw Pointer: {raw_label}  Calibrated Pointer: {calibrated_label}",
+        (12, 72),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.43,
+        (230, 230, 230),
+        1,
+        cv2.LINE_AA,
+    )
+    cv2.putText(
+        canvas,
+        f"center=({center_x:.3f},{center_y:.3f})  "
+        f"gain=({gain_x:.2f},{gain_y:.2f})  C: center  q/esc: quit",
+        (12, 96),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.43,
         (230, 230, 230),
         1,
         cv2.LINE_AA,
