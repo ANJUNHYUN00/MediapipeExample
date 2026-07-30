@@ -21,6 +21,7 @@ MVP 입력은 다음 세 Pose Landmarker 관절로 제한한다.
 | [`AGENTS.md`](./AGENTS.md) | 프로젝트 목적, 안전 경계, 문서 우선순위, 폴더 책임 | 모든 작업에서 가장 먼저 |
 | [`docs/project-plan.md`](./docs/project-plan.md) | Triage Trace 전체 기획과 완료 기준 | 설계·구현 전에 |
 | [`docs/transition-plan.md`](./docs/transition-plan.md) | 기존 RPS 완료 자산, 재사용 결정, 전환 범위 | 레거시 자산을 변경할 때 |
+| [`docs/unity-space-and-first-person-methodology.md`](./docs/unity-space-and-first-person-methodology.md) | Unity 공간·1인칭 시점 구현 방법론 | 공간, 카메라 또는 씬 작업 전에 |
 | [`docs/websocket-protocols.md`](./docs/websocket-protocols.md) | 보존된 gesture v1과 활성 pose v2 계약 | Python·Unity 데이터 변경 전에 |
 | [`Plan/07-triage-trace-architecture-and-pose-input.md`](./Plan/07-triage-trace-architecture-and-pose-input.md) | Pose 기반 아키텍처와 오른팔 입력 설계 | Pose 구현 전에 |
 | [`Plan/08-pose-v2-protocol-and-unity-ar.md`](./Plan/08-pose-v2-protocol-and-unity-ar.md) | pose v2 게시·수신·Unity AR 표시 설계 | 통신·Unity 구현 전에 |
@@ -88,7 +89,21 @@ Unity WebSocket 클라이언트, pose v2 검증, 메인 스레드 전달, AR 모
 
 정식 문서로 승격되기 전의 조사 자료와 메모를 보관한다. 확정 결정은 반드시 `docs/` 또는 활성 `Plan/`에 반영한다.
 
-## 5. AI 필수 작업 절차
+## 5. Unity 공간 구현 및 1인칭 작업 지침
+
+- 공간을 수정하기 전에 목적, 시작점, 이동 경로, 필수 구역, 종료점을 정의한다.
+- 공간 아이디어는 Unity Hierarchy, Prefab, Collider, Spawn, Camera 규칙으로 변환한다. 검증된 모듈형 배경 에셋을 우선 활용한다.
+- 환경, 플레이어 이동, 카메라, AR 인터랙션의 책임을 분리한다.
+- 제작용 `TriageTraceDemoScene`은 자동 생성 도구가 덮어쓰지 않는다. 자동 생성 실험은 별도 테스트 씬에서만 수행한다.
+- Unity 씬 파일은 동시에 여러 에이전트가 수정하지 않는다.
+- 공간 작업 중 Python Pose, WebSocket, Raycast, Dwell 계약은 변경하지 않는다.
+- 활성 `Main Camera`는 하나만 유지한다.
+- Play Mode에서 이동, 충돌, Patient 선택, 상태 카드 표시를 검증한다.
+- 공간 관련 작업 문서에는 수정 범위, 제외 범위, 완료 기준, 검증 방법을 적는다.
+
+일반 방법론과 설계 근거는 [`docs/unity-space-and-first-person-methodology.md`](./docs/unity-space-and-first-person-methodology.md)에 보관하고, 이 절에는 반복 적용할 작업 규칙만 둔다.
+
+## 6. AI 필수 작업 절차
 
 1. 루트 `AGENTS.md`를 가장 먼저 읽는다.
 2. `docs/project-plan.md`, `docs/websocket-protocols.md`와 관련 Plan·Task를 읽는다.
@@ -100,7 +115,7 @@ Unity WebSocket 클라이언트, pose v2 검증, 메인 스레드 전달, AR 모
 8. 변경 후 문서 링크, JSON 구문, 필드명과 상태 불변 조건을 검증한다.
 9. 완료 시 변경 파일, 설계 결정, 검증 결과, 남은 위험과 다음 Task를 보고한다.
 
-## 6. Pose v2 핵심 원칙
+## 7. Pose v2 핵심 원칙
 
 - `tracking`: `TRACKING`, `PARTIAL`, `LOST` 중 하나다.
 - `pointing`: 현재 프레임을 포인터 입력으로 사용할 수 있는지 나타낸다.
@@ -113,7 +128,7 @@ Unity WebSocket 클라이언트, pose v2 검증, 메인 스레드 전달, AR 모
 
 정확한 계약은 [`docs/websocket-protocols.md`](./docs/websocket-protocols.md)를 따른다.
 
-## 7. 기본 완료 기준
+## 8. 기본 완료 기준
 
 - Pose Landmarker가 웹캠 연속 프레임에서 실행되고 자원을 정상 해제한다.
 - 오른쪽 어깨·팔꿈치·손목의 좌표와 visibility가 내부 모델로 변환된다.
@@ -125,7 +140,7 @@ Unity WebSocket 클라이언트, pose v2 검증, 메인 스레드 전달, AR 모
 - 실제 의료 판단을 하지 않는다는 고지가 시작 화면과 프로젝트 문서에 존재한다.
 - gesture v1 fixture와 의미가 그대로 유지된다.
 
-## 8. 문서 유지 규칙
+## 9. 문서 유지 규칙
 
 - 새 핵심 문서나 Task를 추가하면 이 목차를 갱신한다.
 - v2 필드나 불변 조건을 바꾸면 Python·Unity 문서, fixture와 관련 Plan·Task를 같은 작업에서 갱신한다.
