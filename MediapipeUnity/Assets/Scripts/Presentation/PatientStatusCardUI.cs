@@ -149,6 +149,7 @@ namespace TriageTrace.Presentation
 
         private void EnsureReferences()
         {
+         
             if (cardRoot == null)
             {
                 cardRoot = gameObject;

@@ -2,7 +2,8 @@
   "name": "TriageTrace.Runtime",
   "rootNamespace": "TriageTrace",
   "references": [
-    "UnityEngine.UI"
+    "UnityEngine.UI",
+    "Unity.TextMeshPro"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

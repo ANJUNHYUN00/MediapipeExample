@@ -140,31 +140,6 @@ namespace TriageTrace.Presentation
             }
         }
 
-        private void OnGUI()
-        {
-            GUILayout.BeginArea(new Rect(16, 16, 520, 150), GUI.skin.box);
-            GUILayout.Label("Triage Trace — Simulation Only");
-            GUILayout.Label(SafetyNotice);
-            GUILayout.Label($"WebSocket: {_connectionStatus} {_connectionDetail}");
-
-            PosePointerState latest = _presenterState.Latest;
-            if (latest == null)
-            {
-                GUILayout.Label("Pose: waiting for pose_pointer v2");
-            }
-            else
-            {
-                bool fresh = _presenterState.IsFresh(
-                    Time.realtimeSinceStartup,
-                    staleAfterSeconds);
-                GUILayout.Label(
-                    $"Pose: {latest.Tracking} / pointing={latest.Pointing} / " +
-                    $"sequence={latest.Sequence} / fresh={fresh}");
-            }
-
-            GUILayout.EndArea();
-        }
-
         private void OnDisable()
         {
             _ = StopClientAsync();

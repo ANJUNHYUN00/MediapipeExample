@@ -1,4 +1,5 @@
 using System;
+using TMPro;
 using UnityEngine;
 
 namespace TriageTrace.Presentation
@@ -49,6 +50,7 @@ namespace TriageTrace.Presentation
             string.IsNullOrWhiteSpace(displayName) ? name : displayName;
         public Transform StatusCardAnchor =>
             statusCardAnchor == null ? transform : statusCardAnchor;
+        public bool HasStatusCardAnchor => statusCardAnchor != null;
         public PatientInteractionState InteractionState => interactionState;
         public bool IsHighlighted =>
             interactionState == PatientInteractionState.Highlighted;
@@ -173,6 +175,7 @@ namespace TriageTrace.Presentation
         private void Awake()
         {
             EnsureReferences();
+            SyncPatientMarkerText();
             CacheOriginalColors();
             ApplyVisualState();
         }
@@ -183,6 +186,55 @@ namespace TriageTrace.Presentation
             {
                 targetRenderers = GetComponentsInChildren<Renderer>();
             }
+
+            SyncPatientMarkerText();
+        }
+
+        private void SyncPatientMarkerText()
+        {
+            string id = DisplayName;
+            foreach (Transform marker in GetComponentsInChildren<Transform>(true))
+            {
+                if (marker.name != "PatientMarker")
+                {
+                    continue;
+                }
+
+                foreach (TMP_Text text in marker.GetComponentsInChildren<TMP_Text>(true))
+                {
+                    text.text = id;
+                }
+
+                foreach (UnityEngine.UI.Text text in
+                         marker.GetComponentsInChildren<UnityEngine.UI.Text>(true))
+                {
+                    text.text = id;
+                }
+            }
+        }
+
+        public bool TryGetVisualBounds(out Bounds bounds)
+        {
+            bool foundRenderer = false;
+            bounds = default;
+            foreach (Renderer renderer in GetComponentsInChildren<Renderer>())
+            {
+                if (renderer == null || !renderer.enabled)
+                {
+                    continue;
+                }
+
+                if (!foundRenderer)
+                {
+                    bounds = renderer.bounds;
+                    foundRenderer = true;
+                    continue;
+                }
+
+                bounds.Encapsulate(renderer.bounds);
+            }
+
+            return foundRenderer;
         }
 
         private void EnsureReferences()

@@ -115,6 +115,14 @@ def run(
             Camera(camera_config) as camera,
             PoseTracker(pose_config) as tracker,
         ):
+            if camera_config.preview_enabled:
+                cv2.namedWindow(camera_config.window_name, cv2.WINDOW_NORMAL)
+                cv2.resizeWindow(camera_config.window_name, 480, 360)
+                cv2.setWindowProperty(
+                    camera_config.window_name,
+                    cv2.WND_PROP_TOPMOST,
+                    1,
+                )
             LOGGER.info(
                 "Pose tracking started. Press C to center; q or Esc to quit."
             )

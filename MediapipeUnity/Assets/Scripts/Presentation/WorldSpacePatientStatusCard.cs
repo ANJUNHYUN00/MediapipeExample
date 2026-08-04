@@ -96,9 +96,20 @@ namespace TriageTrace.Presentation
             }
 
             Transform anchor = _visiblePatient.StatusCardAnchor;
-            transform.position = useLocalOffset
-                ? anchor.TransformPoint(patientOffset)
-                : anchor.position + patientOffset;
+            if (!_visiblePatient.HasStatusCardAnchor &&
+                _visiblePatient.TryGetVisualBounds(out Bounds visualBounds))
+            {
+                transform.position = new Vector3(
+                    visualBounds.center.x + patientOffset.x,
+                    visualBounds.max.y + 0.35f,
+                    visualBounds.center.z + patientOffset.z);
+            }
+            else
+            {
+                transform.position = useLocalOffset
+                    ? anchor.TransformPoint(patientOffset)
+                    : anchor.position + patientOffset;
+            }
             FaceCamera();
         }
 
@@ -166,7 +177,7 @@ namespace TriageTrace.Presentation
                 return;
             }
 
-            Vector3 forward = targetCamera.transform.forward;
+            Vector3 forward = targetCamera.transform.position - transform.position;
             Vector3 up = keepUpright ? Vector3.up : targetCamera.transform.up;
             if (keepUpright)
             {
