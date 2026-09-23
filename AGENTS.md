@@ -38,8 +38,32 @@ MVP 입력은 다음 세 Pose Landmarker 관절로 제한한다.
 | [`Tasks/16-polish-qa-portfolio-packaging.md`](./Tasks/16-polish-qa-portfolio-packaging.md) | 완료: QA, README, 포트폴리오 정리 | 완료 흐름 변경 전 |
 | [`Tasks/17-world-space-patient-status-card.md`](./Tasks/17-world-space-patient-status-card.md) | 완료: Patient 위 World Space AR 상태 카드 | World Space 카드 변경 전 |
 | [`Tasks/18-python-pointer-calibration.md`](./Tasks/18-python-pointer-calibration.md) | 완료: Python pointer center/gain 보정 | 포인터 좌표 보정 변경 전 |
+| [`CLAUDE.md`](./CLAUDE.md) | Claude Code용 진입 문서. 계약 요약과 금지 목록 | Claude Code 세션 시작 시 |
+| [`TriageTrace-Research/START-HERE.md`](./TriageTrace-Research/START-HERE.md) | **연구 확장 단계의 단계별 실행 가이드** | 새 기능·계측 작업 전에 |
+| [`TriageTrace-Research/00-overview/03-strategic-judgment.md`](./TriageTrace-Research/00-overview/03-strategic-judgment.md) | 연구 방향 판단과 금지 사항의 근거 | 방향이 흔들릴 때 |
+| [`TriageTrace-Research/20-engineering/`](./TriageTrace-Research/20-engineering/) | 계측·불확실성 HUD·HoloLens 이식 사양 | 해당 구현 전에 |
+| [`TriageTrace-Research/30-planning/32-task-backlog.md`](./TriageTrace-Research/30-planning/32-task-backlog.md) | 작업 단위·수용 기준·의존 관계 | 작업 착수 전 |
 
-기존 `Plan/01`~`06`, `Tasks/01`~`06`, `hand_gesture` fixture와 Hand Landmarker 자산은 삭제하지 않는다. 완료된 Task 01~03과 Task 07~18은 재사용 기반이며, 미완료 Hand/RPS Task 04~06은 레거시 참조로 보존한다. Task 10~18의 Unity simulation MVP 흐름은 완료 상태이며, 후속 확장은 새 Task로 분리한다.
+기존 `Plan/01`~`06`, `Tasks/01`~`06`, `hand_gesture` fixture와 Hand Landmarker 자산은 삭제하지 않는다.
+## 2.1 현재 단계와 에이전트 분담
+
+프로젝트는 **작동하는 프로토타입**을 지나 **연구용 계측** 단계에 있다. 새 작업의 목적은 기능 추가가 아니라 **측정 가능성 확보**다. 상세는 [`TriageTrace-Research/START-HERE.md`](./TriageTrace-Research/START-HERE.md).
+
+이 저장소에는 여러 에이전트가 접근한다. 충돌을 피하기 위해 담당 영역을 나눈다.
+
+| 에이전트 | 담당 | 건드리지 않는 것 |
+|---|---|---|
+| **Codex** (VS Code) | 기존 Unity/Python 코드 유지보수, 씬·Editor 도구 | `TriageTrace-Research/` 문서, 신규 `Experiment*` 스크립트 |
+| **Claude Code** (VS Code) | 신규 계측 코드(`Assets/Scripts/Experiment/`), 테스트, git 작업 | 기존 선택 파이프라인 로직, 씬 파일 |
+| **Claude (Cowork)** | `TriageTrace-Research/` 문서, 조사, 실험 설계 | 코드 전부 |
+
+공통 규칙:
+
+- **git 명령(add·commit·push·branch·checkout)은 한 번에 한 에이전트만** 수행한다. 브랜치 전환은 다른 에이전트가 작업 중이 아닐 때만 한다.
+- 같은 파일을 두 에이전트가 동시에 열지 않는다. 특히 `.unity` 씬 파일(§5 참조).
+- 다른 에이전트가 만든 파일을 덮어쓰기 전에 `git status`로 미커밋 변경이 있는지 확인한다.
+- 작업을 마치면 커밋해서 다음 에이전트가 깨끗한 상태에서 시작하게 한다.
+ 완료된 Task 01~03과 Task 07~18은 재사용 기반이며, 미완료 Hand/RPS Task 04~06은 레거시 참조로 보존한다. Task 10~18의 Unity simulation MVP 흐름은 완료 상태이며, 후속 확장은 새 Task로 분리한다.
 
 ## 3. 핵심 아키텍처
 

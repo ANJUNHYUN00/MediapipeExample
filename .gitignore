@@ -45,3 +45,49 @@ dist/
 *.tmp
 .DS_Store
 Thumbs.db
+
+# ---------------------------------------------------------------
+# 외부 대용량 에셋 — 의도적으로 저장소에 넣지 않는다
+# 출처·라이선스·설치 경로는 ASSET_SETUP.md 에 기록할 것
+# (없으면 git add -A 가 수백 MB를 스테이징하고 GitHub 100MB 제한에 걸린다)
+# ---------------------------------------------------------------
+MediapipeUnity/Assets/Subway Full Package/
+MediapipeUnity/Assets/Subway Full Package.meta
+MediapipeUnity/Assets/EmaceArt/
+MediapipeUnity/Assets/EmaceArt.meta
+MediapipeUnity/Assets/Characters/
+MediapipeUnity/Assets/Characters.meta
+MediapipeUnity/Assets/FirstPerson/
+MediapipeUnity/Assets/FirstPerson.meta
+MediapipeUnity/Assets/Fonts/
+MediapipeUnity/Assets/Fonts.meta
+MediapipeUnity/Assets/MobileDependencyResolver/
+MediapipeUnity/Assets/MobileDependencyResolver.meta
+MediapipeUnity/Assets/TextMesh Pro/
+MediapipeUnity/Assets/TextMesh Pro.meta
+MediapipeUnity/Assets/_Recovery/
+MediapipeUnity/Assets/_Recovery.meta
+
+# ---------------------------------------------------------------
+# 실험 데이터 — 🔴 절대 커밋 금지
+# 이 저장소는 공개 GitHub 에 있다. IRB/개인정보 위반이 된다.
+# ---------------------------------------------------------------
+ExperimentLogs/
+experiment-logs/
+**/events_*.jsonl
+**/trials_*.csv
+**/session_*.json
+**/questionnaire_*.csv
+participants/
+consent/
+*.participant
+
+# ---------------------------------------------------------------
+# 툴체인 아카이브 / 대용량 바이너리
+# ---------------------------------------------------------------
+Archive/
+*.iso
+*.msi
+*.nupkg
+# 주의: *.tgz 는 일괄 무시하지 않는다.
+# MRTK3 패키지 tarball 을 Packages/ 에 커밋하는 것이 재현성에 유리하다.
